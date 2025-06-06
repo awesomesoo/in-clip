@@ -114,7 +114,6 @@ const createDemoClient = () => {
       onAuthStateChange: () => ({
         data: { subscription: { unsubscribe: () => {} } },
       }),
-      getSession: async () => ({ data: { session: null }, error: null }),
     },
     from: (table: string) => ({
       select: () => ({
@@ -182,7 +181,6 @@ export type Database = {
           youtube_url: string
           title: string
           description: string | null
-          user_description: string | null
           created_at: string
           updated_at: string
           user_id: string
@@ -192,7 +190,6 @@ export type Database = {
           youtube_url: string
           title: string
           description?: string | null
-          user_description?: string | null
           created_at?: string
           updated_at?: string
           user_id: string
@@ -202,7 +199,6 @@ export type Database = {
           youtube_url?: string
           title?: string
           description?: string | null
-          user_description?: string | null
           created_at?: string
           updated_at?: string
           user_id?: string

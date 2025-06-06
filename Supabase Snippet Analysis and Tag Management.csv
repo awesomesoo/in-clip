@@ -1,0 +1,25 @@
+table_name,column_name,data_type,is_nullable,column_default,foreign_table,foreign_column,policyname,policy_command,policy_condition,with_check,enum_name,enum_value
+analysis,created_at,timestamp with time zone,YES,CURRENT_TIMESTAMP,null,null,null,null,null,null,null,null
+analysis,description,text,YES,null,null,null,null,null,null,null,null,null
+analysis,id,uuid,NO,uuid_generate_v4(),null,null,null,null,null,null,null,null
+analysis,title,text,NO,null,null,null,null,null,null,null,null,null
+analysis,updated_at,timestamp with time zone,YES,CURRENT_TIMESTAMP,null,null,null,null,null,null,null,null
+analysis,user_id,uuid,NO,null,null,null,null,null,null,null,null,null
+analysis,youtube_url,text,NO,null,null,null,null,null,null,null,null,null
+analysis_tags,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+analysis_tags,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+analysis_tags,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+analysis_tags,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+analysis_tags,created_at,timestamp with time zone,YES,CURRENT_TIMESTAMP,null,null,null,null,null,null,null,null
+analysis_tags,tag_id,uuid,NO,null,tags,id,null,null,null,null,null,null
+search_history,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+search_history,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+search_history,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+search_history,analysis_id,uuid,NO,null,analysis,id,null,null,null,null,null,null
+search_history,created_at,timestamp with time zone,YES,CURRENT_TIMESTAMP,null,null,null,null,null,null,null,null
+search_history,id,uuid,NO,uuid_generate_v4(),null,null,null,null,null,null,null,null
+search_history,user_id,uuid,NO,null,null,null,null,null,null,null,null,null
+tags,created_at,timestamp with time zone,YES,CURRENT_TIMESTAMP,null,null,null,null,null,null,null,null
+tags,id,uuid,NO,uuid_generate_v4(),null,null,null,null,null,null,null,null
+tags,name,text,NO,null,null,null,null,null,null,null,null,null
+tags,user_id,uuid,NO,null,null,null,null,null,null,null,null,null
