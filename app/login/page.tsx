@@ -91,8 +91,8 @@ export default function LoginPage() {
     >
       <div className='container'>
         <div className='form-container fadeIn'>
-          <div className='text-center mb-8'>
-            <Link href='/' className='text-3xl font-bold text-gradient'>
+          <div className='text-center' style={{ marginBottom: '2rem' }}>
+            <Link href='/' style={{ fontSize: '1.875rem', fontWeight: '700' }} className='text-gradient'>
               InClip
             </Link>
           </div>
@@ -104,16 +104,20 @@ export default function LoginPage() {
 
           {message && (
             <div
-              className={`p-4 mb-6 border rounded-lg ${
-                message.includes('성공')
-                  ? 'bg-green-50 border-green-200'
-                  : 'bg-red-50 border-red-200'
-              }`}
+              style={{
+                padding: '1rem',
+                marginBottom: '1.5rem',
+                border: '1px solid',
+                borderRadius: '0.5rem',
+                background: message.includes('성공') ? '#f0fdf4' : '#fef2f2',
+                borderColor: message.includes('성공') ? '#bbf7d0' : '#fecaca'
+              }}
             >
               <p
-                className={`text-sm ${
-                  message.includes('성공') ? 'text-green-700' : 'text-red-700'
-                }`}
+                style={{
+                  fontSize: '0.875rem',
+                  color: message.includes('성공') ? '#15803d' : '#dc2626'
+                }}
               >
                 {message}
               </p>
@@ -124,7 +128,8 @@ export default function LoginPage() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className='btn btn-google w-full mb-6'
+            className='btn btn-google'
+            style={{ width: '100%', marginBottom: '1.5rem' }}
           >
             <svg
               className='google-icon'
@@ -190,7 +195,8 @@ export default function LoginPage() {
             <button
               type='submit'
               disabled={loading}
-              className='btn btn-primary w-full mb-6'
+              className='btn btn-primary'
+              style={{ width: '100%', marginBottom: '1.5rem' }}
             >
               {loading ? '로그인 중...' : '로그인'}
             </button>

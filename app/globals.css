@@ -553,19 +553,19 @@ main {
 }
 
 /* Spacing */
-.space-y-2 > * + * {
+.space-y-2>*+* {
   margin-top: 8px;
 }
 
-.space-y-4 > * + * {
+.space-y-4>*+* {
   margin-top: 16px;
 }
 
-.space-y-6 > * + * {
+.space-y-6>*+* {
   margin-top: 24px;
 }
 
-.space-y-8 > * + * {
+.space-y-8>*+* {
   margin-top: 32px;
 }
 
@@ -1163,6 +1163,41 @@ main {
   overflow: hidden;
 }
 
+/* Hover effects */
+.hover-opacity:hover {
+  opacity: 1 !important;
+}
+
+.hover-text-red:hover {
+  color: #ef4444 !important;
+}
+
+/* Large grid responsive */
+@media (min-width: 1024px) {
+  .lg-grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsive user links */
+.user-link-hidden {
+  display: none;
+}
+
+.user-name-hidden {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .user-link-hidden {
+    display: block;
+  }
+
+  .user-name-hidden {
+    display: block;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
@@ -1375,11 +1410,9 @@ main {
 .thumbnail-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    45deg,
-    rgba(59, 130, 246, 0.8),
-    rgba(139, 92, 246, 0.8)
-  );
+  background: linear-gradient(45deg,
+      rgba(59, 130, 246, 0.8),
+      rgba(139, 92, 246, 0.8));
   display: flex;
   align-items: center;
   justify-content: center;

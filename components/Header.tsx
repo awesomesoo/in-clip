@@ -89,36 +89,37 @@ export default function Header() {
           {/* User Actions */}
           <div className='user-actions'>
             {loading ? (
-              <div className='flex items-center gap-3'>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div className='loading-spinner'></div>
               </div>
             ) : user ? (
-              <div className='flex items-center gap-3'>
-                <Link href='/history' className='nav-link hidden sm:block'>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Link href='/history' className='nav-link user-link-hidden'>
                   내 기록
                 </Link>
-                <Link href='/mypage' className='nav-link hidden sm:block'>
+                <Link href='/mypage' className='nav-link user-link-hidden'>
                   마이페이지
                 </Link>
                 <div className='user-avatar'>
                   <div className='avatar-circle'>{getUserInitial()}</div>
-                  <span className='user-name hidden sm:block'>
+                  <span className='user-name user-name-hidden'>
                     {getUserDisplayName()}
                   </span>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className='btn btn-secondary btn-sm'
+                  className='btn btn-secondary'
+                  style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
                 >
                   로그아웃
                 </button>
               </div>
             ) : (
-              <div className='flex items-center gap-3'>
-                <Link href='/login' className='btn btn-outline btn-sm'>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Link href='/login' className='btn btn-outline' style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
                   로그인
                 </Link>
-                <Link href='/signup' className='btn btn-primary btn-sm'>
+                <Link href='/signup' className='btn btn-primary' style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}>
                   회원가입
                 </Link>
               </div>
