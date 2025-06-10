@@ -14,7 +14,7 @@ const features = [
     {
         icon: '📝',
         title: '북마크 및 메모 기능',
-        description: '중요한 요약을 저장하고 개인 메모를 추가할 수 있습니다.'
+        description: '중요한 요약을 저장하고 비공개 메모를 추가할 수 있습니다.'
     },
     {
         icon: '🔒',

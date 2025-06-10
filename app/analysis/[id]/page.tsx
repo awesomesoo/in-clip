@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 interface Analysis {
@@ -32,12 +32,25 @@ export default function AnalysisDetailPage({ params }: PageProps) {
   const [relatedAnalyses, setRelatedAnalyses] = useState<Analysis[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null)
 
   useEffect(() => {
-    loadAnalysis()
-  }, [params.id])
+    const resolveParams = async () => {
+      const resolved = await params
+      setResolvedParams(resolved)
+    }
+    resolveParams()
+  }, [params])
+
+  useEffect(() => {
+    if (resolvedParams) {
+      loadAnalysis()
+    }
+  }, [resolvedParams])
 
   const loadAnalysis = async () => {
+    if (!resolvedParams) return
+
     try {
       if (!supabase) {
         // Supabase가 설정되지 않은 경우 샘플 데이터 사용
@@ -72,7 +85,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
           },
         ]
 
-        const currentAnalysis = sampleAnalyses.find(a => a.id === params.id)
+        const currentAnalysis = sampleAnalyses.find(a => a.id === resolvedParams.id)
         if (!currentAnalysis) {
           setError('분석을 찾을 수 없습니다.')
           return
@@ -83,7 +96,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
         // 관련 분석 (같은 태그를 가진 다른 분석들)
         const related = sampleAnalyses.filter(
           a =>
-            a.id !== params.id &&
+            a.id !== resolvedParams.id &&
             a.tags?.some(tag =>
               currentAnalysis.tags?.some(
                 currentTag => currentTag.name === tag.name
@@ -113,7 +126,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
                     )
                 `
         )
-        .eq('id', params.id)
+        .eq('id', resolvedParams.id)
         .single()
 
       if (analysisError || !analysisData) {
@@ -144,7 +157,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
   }
 
   const loadRelatedAnalyses = async (tagNames: string[]) => {
-    if (!supabase) return
+    if (!supabase || !resolvedParams) return
 
     try {
       const { data, error } = await supabase
@@ -164,7 +177,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
                     )
                 `
         )
-        .neq('id', params.id)
+        .neq('id', resolvedParams.id)
         .limit(3)
 
       if (error) throw error
@@ -371,7 +384,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
                       />
                     </svg>
                     <span className='text-sm font-medium text-blue-800'>
-                      개인 메모
+                      비공개 메모
                     </span>
                   </div>
                   <p className='text-blue-700'>{analysis.user_description}</p>
@@ -484,16 +497,12 @@ export default function AnalysisDetailPage({ params }: PageProps) {
             <h3 className='font-semibold text-gray-900 mb-4'>작업</h3>
             <div className='flex flex-wrap gap-3'>
               <button
-                onClick={() => {
-                  const url = window.location.href
-                  navigator.clipboard
-                    .writeText(url)
-                    .then(() => {
-                      alert('링크가 클립보드에 복사되었습니다!')
-                    })
-                    .catch(() => {
-                      alert('링크 복사에 실패했습니다.')
-                    })
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(window.location.href)
+                  } catch (err) {
+                    // Silent fail
+                  }
                 }}
                 className='btn btn-secondary text-sm flex items-center gap-2'
               >

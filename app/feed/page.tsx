@@ -76,8 +76,8 @@ export default function FeedPage() {
 
         const filteredData = selectedTag
           ? sampleData.filter(analysis =>
-              analysis.tags?.some(tag => tag.name === selectedTag)
-            )
+            analysis.tags?.some(tag => tag.name === selectedTag)
+          )
           : sampleData
 
         setAnalyses(filteredData)
@@ -208,7 +208,7 @@ export default function FeedPage() {
         <div className='feed-header'>
           <h1 className='feed-title'>커뮤니티 피드</h1>
           <p className='feed-subtitle'>
-            다른 사용자들이 분석한 유튜브 영상들을 확인하고, 새로운 인사이트를
+            다른 사용자들이 분석한 유튜브 영상들을 확인하고,<br /> 새로운 인사이트를
             발견해보세요.
           </p>
         </div>
@@ -248,9 +248,8 @@ export default function FeedPage() {
               <button
                 key={tag.id}
                 onClick={() => setSelectedTag(tag.name)}
-                className={`tag-button ${
-                  selectedTag === tag.name ? 'active' : ''
-                }`}
+                className={`tag-button ${selectedTag === tag.name ? 'active' : ''
+                  }`}
               >
                 #{tag.name}
               </button>
@@ -303,7 +302,7 @@ export default function FeedPage() {
                             src={thumbnailUrl}
                             alt={analysis.title}
                             onError={e => {
-                              ;(
+                              ; (
                                 e.target as HTMLImageElement
                               ).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
                             }}

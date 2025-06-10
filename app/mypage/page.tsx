@@ -376,7 +376,7 @@ function MyPageContent() {
                   </div>
                   <div>
                     <h3 className='text-lg font-medium text-gray-900'>
-                      분석 기록
+                      내 분석 기록
                     </h3>
                     <p className='text-gray-600 text-sm'>
                       모든 분석 기록을 확인합니다

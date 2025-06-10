@@ -6,9 +6,7 @@ import { User } from '@supabase/supabase-js'
 import { useAuth } from '@/lib/auth-context'
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { createAnalysisWithTags, addSearchHistory } from '@/lib/database'
-import AnalysisManager from '@/components/AnalysisManager'
-import TagManager from '@/components/TagManager'
-import SearchHistoryManager from '@/components/SearchHistoryManager'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import styles from './analyze.module.css'
@@ -19,6 +17,16 @@ interface AnalysisResult {
   description: string
   youtube_url: string
   user_description?: string
+  video_id?: string
+  thumbnail_url?: string
+  transcript?: string
+  ai_summary?: string
+  key_points?: string[]
+  category?: string
+  sentiment?: string
+  difficulty?: string
+  duration_estimate?: string
+  ai_tags?: string[]
 }
 
 interface Tag {
@@ -30,7 +38,6 @@ export default function AnalyzePage() {
   const { user } = useAuth()
   const router = useRouter()
   const [url, setUrl] = useState('')
-  const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [userDescription, setUserDescription] = useState('')
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -39,8 +46,7 @@ export default function AnalyzePage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState('manage') // CRUD 탭 관리
-  const [refreshKey, setRefreshKey] = useState(0) // 컴포넌트 새로고침용
+
   const [isEditing, setIsEditing] = useState(false) // 편집 모드
   const [editFormData, setEditFormData] = useState({
     title: '',
@@ -215,67 +221,109 @@ export default function AnalyzePage() {
     }
 
     try {
-      // Mock analysis - 실제로는 AI API를 호출하거나 서버사이드에서 처리
-      const mockTitle = title || `분석된 영상 제목 - ${extractVideoId(url)}`
-      const mockDescription =
-        description ||
-        '이 영상은 유튜브에서 분석된 내용입니다. 실제 분석 결과는 AI API를 통해 생성됩니다. 영상의 주요 내용과 핵심 포인트들을 요약하여 제공합니다.'
+      // 인증 토큰 가져오기
+      const session = await supabase?.auth.getSession()
+      const accessToken = session?.data?.session?.access_token
 
-      if (!isSupabaseConfigured() || !user) {
-        // Supabase가 설정되지 않았거나 로그인하지 않은 경우 로컬 결과만 표시
-        const mockResult: AnalysisResult = {
-          id: 'demo-' + Date.now(),
-          title: mockTitle,
-          description: mockDescription,
-          youtube_url: url,
-          user_description: userDescription,
-        }
-        setResult(mockResult)
-        setLoading(false)
-        return
-      }
-
-      // 새로운 database 함수 사용
-      const analysisData = {
-        youtube_url: url,
-        title: mockTitle,
-        description: mockDescription,
-        user_description: userDescription || null,
-        user_id: user.id,
-      }
-
-      const analysis = await createAnalysisWithTags(analysisData, selectedTags)
-
-      setResult({
-        ...analysis,
-        user_description: userDescription,
+      console.log('🔐 클라이언트 토큰 확인:', {
+        hasToken: !!accessToken,
+        tokenLength: accessToken?.length || 0,
+        user: user?.email
       })
 
-      // 검색 기록 추가
-      if (user) {
-        await addSearchHistory({
-          analysis_id: analysis.id,
-          user_id: user.id,
-        })
+      // 유튜브 분석 API 호출
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
       }
 
-      // CRUD 컴포넌트들을 새로고침
-      setRefreshKey(prev => prev + 1)
+      // 토큰이 있으면 Authorization 헤더에 추가
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`
+        console.log('🔑 Authorization 헤더 추가됨')
+      }
 
-      // 자동 이동 옵션이 켜져있고 실제로 저장된 분석인 경우 결과 페이지로 이동
-      if (autoRedirect && !analysis.id.startsWith('demo-')) {
-        setRedirectCountdown(3) // 3초 카운트다운 시작
+      const response = await fetch('/api/youtube-analysis', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ url: url.trim() }),
+      })
 
-        const countdownInterval = setInterval(() => {
-          setRedirectCountdown(prev => {
-            if (prev <= 1) {
-              clearInterval(countdownInterval)
-              router.push(`/analysis/${analysis.id}`)
-              return 0
-            }
-            return prev - 1
-          })
-        }, 1000) // 1초마다 카운트다운
+      const data = await response.json()
+
+      console.log('📡 API 응답 받음:', {
+        status: response.status,
+        ok: response.ok,
+        data: data
+      })
+
+      if (!response.ok) {
+        throw new Error(data.error || '분석 중 오류가 발생했습니다.')
+      }
+
+      if (data.success && data.data) {
+        console.log('✅ 분석 성공 - 저장 상태:', {
+          saved: data.data.saved,
+          savedId: data.data.savedId,
+          message: data.data.message
+        })
+        // AI 분석 결과를 사용하여 AnalysisResult 생성
+        // 실제 유튜브 제목을 우선 사용 (API에서 이미 처리됨)
+        const analysisResult: AnalysisResult = {
+          id: data.data.savedId || 'demo-' + Date.now(),
+          title: data.data.analysis.title, // API에서 실제 유튜브 제목 또는 AI 제목 반환
+          description: description || data.data.analysis.summary,
+          youtube_url: url,
+          user_description: userDescription,
+          video_id: data.data.videoId,
+          thumbnail_url: `https://img.youtube.com/vi/${data.data.videoId}/hqdefault.jpg`,
+          transcript: data.data.transcript,
+          ai_summary: data.data.analysis.summary,
+          key_points: data.data.analysis.keyPoints,
+          category: data.data.analysis.category,
+          sentiment: data.data.analysis.sentiment,
+          difficulty: data.data.analysis.difficulty,
+          duration_estimate: data.data.analysis.duration_estimate,
+          ai_tags: data.data.analysis.tags,
+        }
+
+        setResult(analysisResult)
+
+        // 검색 기록은 API에서 자동으로 추가되므로 여기서는 별도 처리 불필요
+
+        // 분석 완료를 다른 탭/페이지에 알리기 위한 이벤트 발생
+        if (data.data.saved && data.data.savedId) {
+          console.log('📢 분석 완료 이벤트 발생:', data.data.savedId)
+          // localStorage를 사용해서 다른 탭에 알림
+          window.dispatchEvent(new CustomEvent('analysisCompleted', {
+            detail: { analysisId: data.data.savedId, title: analysisResult.title }
+          }))
+          // localStorage에도 저장 (다른 탭에서 감지 가능)
+          localStorage.setItem('lastAnalysisCompleted', JSON.stringify({
+            timestamp: Date.now(),
+            analysisId: data.data.savedId,
+            title: analysisResult.title
+          }))
+        }
+
+
+
+        // 자동 이동 옵션이 켜져있고 실제로 저장된 분석인 경우 결과 페이지로 이동
+        if (autoRedirect && !analysisResult.id.startsWith('demo-')) {
+          setRedirectCountdown(3) // 3초 카운트다운 시작
+
+          const countdownInterval = setInterval(() => {
+            setRedirectCountdown(prev => {
+              if (prev <= 1) {
+                clearInterval(countdownInterval)
+                router.push(`/analysis/${analysisResult.id}`)
+                return 0
+              }
+              return prev - 1
+            })
+          }, 1000) // 1초마다 카운트다운
+        }
+      } else {
+        throw new Error(data.error || '분석 결과를 받을 수 없습니다.')
       }
     } catch (error: any) {
       setError(error.message || '분석 중 오류가 발생했습니다.')
@@ -286,7 +334,6 @@ export default function AnalyzePage() {
 
   const handleReset = () => {
     setUrl('')
-    setTitle('')
     setDescription('')
     setUserDescription('')
     setSelectedTags([])
@@ -392,10 +439,10 @@ export default function AnalyzePage() {
         // 실제 데이터베이스에서 삭제
         const { deleteAnalysis } = await import('@/lib/database')
         await deleteAnalysis(result.id)
-        alert('분석이 성공적으로 삭제되었습니다.')
+        // 성공적으로 삭제됨
       } else {
         // 로컬에서만 삭제 (로그인하지 않았거나 데모 모드)
-        alert('분석이 로컬에서 삭제되었습니다.')
+        // 로컬에서 삭제됨
       }
 
       // 성공적으로 삭제되면 초기화
@@ -414,8 +461,84 @@ export default function AnalyzePage() {
             <p className={styles.subtitle}>
               유튜브 URL을 입력하면 영상의 내용을 분석하여 요약해드립니다.
             </p>
+            {/* 디버깅 정보 */}
+            <div style={{
+              marginTop: '1rem',
+              padding: '0.5rem',
+              backgroundColor: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: '8px',
+              fontSize: '0.875rem'
+            }}>
+              <div><strong>🔍 현재 상태:</strong></div>
+              <div>로그인 상태: {user ? `✅ ${user.email}` : '❌ 로그인 필요'}</div>
+              <div>사용자 ID: {user?.id || '없음'}</div>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button
+                  onClick={() => {
+                    console.log('👤 현재 사용자 정보:', user)
+                    console.log('🔐 인증 상태 상세:', {
+                      isLoggedIn: !!user,
+                      userId: user?.id,
+                      email: user?.email,
+                      userMetadata: user?.user_metadata
+                    })
+                  }}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    fontSize: '0.75rem',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  사용자 정보 확인
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      if (!supabase) {
+                        alert('Supabase 클라이언트가 없습니다.')
+                        return
+                      }
+                      const token = (await supabase.auth.getSession()).data.session?.access_token
+                      console.log('🔑 현재 토큰:', token ? '있음' : '없음')
+
+                      const response = await fetch('/api/debug-auth', {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        }
+                      })
+                      const result = await response.json()
+                      console.log('🔍 API 디버깅 결과:', result)
+
+                      alert(`디버깅 완료! 콘솔 확인:\n- 사용자 인식: ${result.auth?.hasUser ? '✅' : '❌'}\n- DB 연결: ${result.database?.connected ? '✅' : '❌'}\n- 토큰: ${result.request?.hasAuthHeader ? '✅' : '❌'}`)
+                    } catch (error) {
+                      console.error('❌ 디버깅 실패:', error)
+                      alert('디버깅 실패: ' + error)
+                    }
+                  }}
+                  style={{
+                    padding: '0.25rem 0.5rem',
+                    fontSize: '0.75rem',
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🔍 인증 & DB 테스트
+                </button>
+              </div>
+            </div>
           </div>
 
+          {/* 분석 폼 */}
           {!result ? (
             <div className={styles.card}>
               <form onSubmit={handleAnalyze}>
@@ -447,11 +570,10 @@ export default function AnalyzePage() {
                           key={tag.id}
                           type='button'
                           onClick={() => toggleTag(tag.name)}
-                          className={`${styles.tagButton} ${
-                            selectedTags.includes(tag.name)
-                              ? styles.tagButtonActive
-                              : ''
-                          }`}
+                          className={`${styles.tagButton} ${selectedTags.includes(tag.name)
+                            ? styles.tagButtonActive
+                            : ''
+                            }`}
                         >
                           {tag.name}
                         </button>
@@ -500,7 +622,7 @@ export default function AnalyzePage() {
                 {user && (
                   <div className={styles.formGroup}>
                     <label htmlFor='userDescription' className={styles.label}>
-                      개인 설명 (선택사항)
+                      비공개 메모 (선택사항)
                     </label>
                     <input
                       id='userDescription'
@@ -511,50 +633,14 @@ export default function AnalyzePage() {
                       placeholder='예: 대학 강의 정리용, 프로젝트 참고자료 등'
                     />
                     <p className={styles.helpText}>
-                      본인만 볼 수 있는 설명입니다. 나중에 검색 기록에서 확인할
+                      본인만 볼 수 있는 메모입니다. 나중에 검색 기록에서 확인할image.png
                       수 있습니다.
                     </p>
                   </div>
                 )}
 
-                {/* 자동 이동 옵션 */}
-                {user && (
-                  <div className={styles.formGroup}>
-                    <div className={styles.checkboxContainer}>
-                      <input
-                        id='auto-redirect'
-                        type='checkbox'
-                        checked={autoRedirect}
-                        onChange={e => setAutoRedirect(e.target.checked)}
-                        className={styles.checkbox}
-                      />
-                      <label
-                        htmlFor='auto-redirect'
-                        className={styles.checkboxLabel}
-                      >
-                        분석 완료 후 자동으로 상세 결과 페이지로 이동
-                      </label>
-                    </div>
-                    <p className={styles.helpText}>
-                      체크하면 분석 완료 2초 후 상세 결과 페이지로 자동
-                      이동합니다.
-                    </p>
-                  </div>
-                )}
 
-                <div className={styles.formGroup}>
-                  <label htmlFor='title' className={styles.label}>
-                    제목 (선택사항)
-                  </label>
-                  <input
-                    id='title'
-                    type='text'
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    className={styles.input}
-                    placeholder='영상 제목을 직접 입력하거나 비워두세요'
-                  />
-                </div>
+                {/* 제목은 유튜브 영상의 실제 제목을 자동으로 사용하므로 입력 필드 제거 */}
 
                 <div className={styles.formGroup}>
                   <label htmlFor='description' className={styles.label}>
@@ -579,9 +665,8 @@ export default function AnalyzePage() {
                   <button
                     type='submit'
                     disabled={loading}
-                    className={`${styles.button} ${styles.buttonPrimary} ${
-                      loading ? '' : ''
-                    }`}
+                    className={`${styles.button} ${styles.buttonPrimary} ${loading ? '' : ''
+                      }`}
                   >
                     {loading ? (
                       <>
@@ -626,13 +711,29 @@ export default function AnalyzePage() {
                 )}
               </form>
             </div>
-          ) : (
+          ) : result ? (
             // 분석 결과 표시
             <div className={styles.resultContainer}>
               <div className={styles.card}>
                 <div className={styles.resultHeader}>
                   <div>
                     <h2 className={styles.resultTitle}>분석 완료!</h2>
+                    {/* 저장 상태 안내 */}
+                    {!result.id.startsWith('demo-') && (
+                      <div style={{
+                        marginTop: '0.5rem',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#10b981',
+                        color: 'white',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        ✅ 분석 기록이 저장되었습니다. <Link href="/history" style={{ color: 'white', textDecoration: 'underline' }}>내 분석 기록</Link>에서 확인하세요.
+                      </div>
+                    )}
                     {/* 자동 이동 카운트다운 메시지 */}
                     {redirectCountdown > 0 && (
                       <div className={styles.countdownContainer}>
@@ -804,14 +905,217 @@ export default function AnalyzePage() {
                 ) : (
                   // 보기 모드
                   <div className={styles.resultContent}>
-                    <div className={styles.resultSection}>
-                      <h3 className={styles.resultSectionTitle}>
-                        {result.title}
-                      </h3>
-                      <p className={styles.resultDescription}>
-                        {result.description}
-                      </p>
-                    </div>
+                    {/* 영상 정보 헤더 */}
+                    {result.video_id && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '1rem',
+                        marginBottom: '1.5rem',
+                        padding: '1rem',
+                        backgroundColor: '#f8fafc',
+                        borderRadius: '0.5rem'
+                      }}>
+                        <img
+                          src={`https://img.youtube.com/vi/${result.video_id}/hqdefault.jpg`}
+                          alt='비디오 썸네일'
+                          style={{
+                            width: '120px',
+                            height: '90px',
+                            borderRadius: '0.375rem',
+                            objectFit: 'cover'
+                          }}
+                        />
+                        <div style={{ flex: 1 }}>
+                          <h3 className={styles.resultSectionTitle} style={{ marginBottom: '0.5rem' }}>
+                            {result.title}
+                          </h3>
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                            {result.category && (
+                              <span style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                backgroundColor: '#dbeafe',
+                                color: '#1e40af',
+                                borderRadius: '9999px'
+                              }}>
+                                {result.category}
+                              </span>
+                            )}
+                            {result.difficulty && (
+                              <span style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                backgroundColor: '#dcfce7',
+                                color: '#166534',
+                                borderRadius: '9999px'
+                              }}>
+                                {result.difficulty}
+                              </span>
+                            )}
+                            {result.sentiment && (
+                              <span style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                backgroundColor: '#fae8ff',
+                                color: '#7c2d92',
+                                borderRadius: '9999px'
+                              }}>
+                                {result.sentiment}
+                              </span>
+                            )}
+                            {result.duration_estimate && (
+                              <span style={{
+                                padding: '0.25rem 0.5rem',
+                                fontSize: '0.75rem',
+                                backgroundColor: '#fed7aa',
+                                color: '#c2410c',
+                                borderRadius: '9999px'
+                              }}>
+                                ⏱️ {result.duration_estimate}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI 요약 */}
+                    {result.ai_summary && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#eff6ff',
+                        border: '1px solid #dbeafe',
+                        borderLeft: '4px solid #3b82f6',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1.5rem'
+                      }}>
+                        <h4 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#1e40af',
+                          marginBottom: '0.5rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          🤖 AI 요약
+                        </h4>
+                        <p style={{
+                          color: '#1e40af',
+                          lineHeight: '1.6',
+                          margin: 0
+                        }}>
+                          {result.ai_summary}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 주요 포인트 */}
+                    {result.key_points && result.key_points.length > 0 && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1.5rem'
+                      }}>
+                        <h4 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#166534',
+                          marginBottom: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          🎯 주요 포인트
+                        </h4>
+                        <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                          {result.key_points.map((point, index) => (
+                            <li key={index} style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '0.5rem',
+                              marginBottom: '0.5rem',
+                              fontSize: '0.875rem'
+                            }}>
+                              <span style={{
+                                backgroundColor: '#166534',
+                                color: 'white',
+                                borderRadius: '50%',
+                                width: '1.25rem',
+                                height: '1.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.75rem',
+                                fontWeight: '600',
+                                flexShrink: 0,
+                                marginTop: '0.125rem'
+                              }}>
+                                {index + 1}
+                              </span>
+                              <span style={{ color: '#166534', lineHeight: '1.4' }}>
+                                {point}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* AI 태그 */}
+                    {result.ai_tags && result.ai_tags.length > 0 && (
+                      <div style={{
+                        padding: '1rem',
+                        backgroundColor: '#fdf4ff',
+                        border: '1px solid #f3e8ff',
+                        borderRadius: '0.5rem',
+                        marginBottom: '1.5rem'
+                      }}>
+                        <h4 style={{
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          color: '#7c2d92',
+                          marginBottom: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          🏷️ AI 추천 태그
+                        </h4>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {result.ai_tags.map((tag, index) => (
+                            <span key={index} style={{
+                              padding: '0.25rem 0.5rem',
+                              fontSize: '0.75rem',
+                              backgroundColor: '#fae8ff',
+                              color: '#7c2d92',
+                              borderRadius: '9999px'
+                            }}>
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 사용자 입력 정보 */}
+                    {description && (
+                      <div className={styles.resultSection}>
+                        <h3 className={styles.resultSectionTitle}>
+                          사용자 입력 정보
+                        </h3>
+                        <div>
+                          <h4 style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.25rem' }}>
+                            사용자 설명:
+                          </h4>
+                          <p style={{ color: '#6b7280', fontSize: '0.875rem', margin: 0, lineHeight: '1.4' }}>
+                            {description}
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {result.user_description && (
                       <div className={styles.personalNote}>
@@ -830,7 +1134,7 @@ export default function AnalyzePage() {
                             />
                           </svg>
                           <span className={styles.personalNoteLabel}>
-                            개인 메모
+                            비공개 메모
                           </span>
                         </div>
                         <p className={styles.personalNoteText}>
@@ -922,7 +1226,9 @@ export default function AnalyzePage() {
                 )}
               </div>
             </div>
-          )}
+          ) : null}
+
+
         </div>
       </div>
     </div>

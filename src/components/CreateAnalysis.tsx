@@ -216,10 +216,10 @@ export default function CreateAnalysis({
           />
         </div>
 
-        {/* 개인 메모 */}
+        {/* 비공개 메모 */}
         <div>
           <label className='block text-sm font-medium text-gray-700 mb-1'>
-            개인 메모
+            비공개 메모
           </label>
           <input
             type='text'
@@ -258,11 +258,10 @@ export default function CreateAnalysis({
           <button
             type='submit'
             disabled={loading}
-            className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-              loading
+            className={`flex-1 px-4 py-2 rounded-md transition-colors ${loading
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
+              }`}
           >
             {loading ? (
               <span className='flex items-center justify-center'>

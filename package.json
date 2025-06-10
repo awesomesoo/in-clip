@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@distube/ytdl-core": "^4.16.11",
     "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.49.10",
     "autoprefixer": "^10.4.21",
@@ -16,7 +17,9 @@
     "postcss": "^8.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "youtube-transcript": "^1.2.1"
+    "youtube-transcript": "^1.2.1",
+    "youtube-transcript-api": "^2.0.4",
+    "youtubei.js": "^14.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

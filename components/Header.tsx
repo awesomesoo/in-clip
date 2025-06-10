@@ -66,25 +66,28 @@ export default function Header() {
     <header className={`header ${isScrolled ? 'header-transparent' : ''}`}>
       <div className='container'>
         <div className='header-content'>
-          {/* Logo */}
-          <Link href='/' className='logo text-gradient'>
-            InClip
-          </Link>
+          {/* Left side: Logo + Navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            {/* Logo */}
+            <Link href='/' className='logo text-gradient'>
+              InClip
+            </Link>
 
-          {/* Navigation */}
-          <nav className='nav'>
-            <Link href='/analyze' className='nav-link'>
-              영상 요약하기
-            </Link>
-            <Link href='/feed' className='nav-link'>
-              커뮤니티
-            </Link>
-            {user && (
-              <Link href='/history' className='nav-link'>
-                내 분석 기록
+            {/* Navigation */}
+            <nav className='nav'>
+              <Link href='/analyze' className='nav-link'>
+                영상 요약하기
               </Link>
-            )}
-          </nav>
+              <Link href='/feed' className='nav-link'>
+                커뮤니티
+              </Link>
+              {user && (
+                <Link href='/history' className='nav-link'>
+                  내 분석 기록
+                </Link>
+              )}
+            </nav>
+          </div>
 
           {/* User Actions */}
           <div className='user-actions'>
@@ -94,9 +97,6 @@ export default function Header() {
               </div>
             ) : user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Link href='/history' className='nav-link user-link-hidden'>
-                  내 기록
-                </Link>
                 <Link href='/mypage' className='nav-link user-link-hidden'>
                   마이페이지
                 </Link>

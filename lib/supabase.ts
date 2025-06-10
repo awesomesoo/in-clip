@@ -7,11 +7,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 // 환경 변수가 올바르게 설정되었는지 확인
 const hasValidConfig = Boolean(
   supabaseUrl &&
-    supabaseAnonKey &&
-    supabaseUrl.startsWith('http') &&
-    supabaseAnonKey.length > 10 &&
-    supabaseUrl !== 'your_supabase_project_url_here' &&
-    supabaseAnonKey !== 'your_supabase_anon_key_here'
+  supabaseAnonKey &&
+  supabaseUrl.startsWith('http') &&
+  supabaseAnonKey.length > 10 &&
+  supabaseUrl !== 'your_supabase_project_url_here' &&
+  supabaseAnonKey !== 'your_supabase_anon_key_here'
 )
 
 // 실제 Supabase 클라이언트 생성
@@ -32,6 +32,16 @@ export type Analysis = {
   created_at: string
   updated_at: string
   user_id: string
+  video_id?: string
+  thumbnail_url?: string
+  transcript?: string
+  ai_summary?: string
+  key_points?: string[]
+  category?: string
+  sentiment?: string
+  difficulty?: string
+  duration_estimate?: string
+  ai_tags?: string[]
   tags?: Tag[]
 }
 
@@ -112,7 +122,7 @@ const createDemoClient = () => {
       }),
       signOut: async () => ({ error: null }),
       onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: () => {} } },
+        data: { subscription: { unsubscribe: () => { } } },
       }),
     },
     from: (table: string) => ({
@@ -184,6 +194,16 @@ export type Database = {
           created_at: string
           updated_at: string
           user_id: string
+          video_id?: string | null
+          thumbnail_url?: string | null
+          transcript?: string | null
+          ai_summary?: string | null
+          key_points?: any[] | null
+          category?: string | null
+          sentiment?: string | null
+          difficulty?: string | null
+          duration_estimate?: string | null
+          ai_tags?: any[] | null
         }
         Insert: {
           id?: string
@@ -193,6 +213,16 @@ export type Database = {
           created_at?: string
           updated_at?: string
           user_id: string
+          video_id?: string | null
+          thumbnail_url?: string | null
+          transcript?: string | null
+          ai_summary?: string | null
+          key_points?: any[] | null
+          category?: string | null
+          sentiment?: string | null
+          difficulty?: string | null
+          duration_estimate?: string | null
+          ai_tags?: any[] | null
         }
         Update: {
           id?: string
@@ -202,6 +232,16 @@ export type Database = {
           created_at?: string
           updated_at?: string
           user_id?: string
+          video_id?: string | null
+          thumbnail_url?: string | null
+          transcript?: string | null
+          ai_summary?: string | null
+          key_points?: any[] | null
+          category?: string | null
+          sentiment?: string | null
+          difficulty?: string | null
+          duration_estimate?: string | null
+          ai_tags?: any[] | null
         }
       }
       tags: {

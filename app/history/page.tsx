@@ -52,12 +52,68 @@ function HistoryPageContent() {
     }
   }, [user])
 
+  // 페이지가 다시 포커스될 때 새로고침 (중복 방지 포함)
+  useEffect(() => {
+    let lastRefreshTime = 0
+    const REFRESH_COOLDOWN = 3000 // 3초 쿨다운
+
+    const shouldRefresh = () => {
+      const now = Date.now()
+      if (now - lastRefreshTime < REFRESH_COOLDOWN) {
+        console.log('⏳ 새로고침 쿨다운 중... 무시됨')
+        return false
+      }
+      lastRefreshTime = now
+      return true
+    }
+
+    const handleFocus = () => {
+      if (user && !loading && shouldRefresh()) {
+        console.log('📱 페이지 포커스 - 데이터 새로고침')
+        fetchHistory(user.id)
+      }
+    }
+
+    // 다른 탭에서 분석 완료 이벤트 수신
+    const handleAnalysisCompleted = (event: CustomEvent) => {
+      if (user && !loading && shouldRefresh()) {
+        console.log('📢 분석 완료 이벤트 수신:', event.detail)
+        setTimeout(() => {
+          fetchHistory(user.id)
+        }, 2000) // 2초 후 새로고침 (API 저장 완료 대기)
+      }
+    }
+
+    // localStorage 변경 감지 (다른 탭에서의 분석 완료)
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'lastAnalysisCompleted' && user && !loading && shouldRefresh()) {
+        console.log('📢 LocalStorage 분석 완료 감지')
+        setTimeout(() => {
+          fetchHistory(user.id)
+        }, 2000)
+      }
+    }
+
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('analysisCompleted', handleAnalysisCompleted as EventListener)
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('analysisCompleted', handleAnalysisCompleted as EventListener)
+      window.removeEventListener('storage', handleStorageChange)
+    }
+  }, [user, loading])
+
   useEffect(() => {
     applyFilters()
   }, [history, selectedTag, selectedPeriod])
 
   const fetchHistory = async (userId: string) => {
+    console.log('📋 분석 기록 로드 시작 - 사용자 ID:', userId)
+
     if (!supabase) {
+      console.log('⚠️ Supabase가 설정되지 않음 - 샘플 데이터 사용')
       // Supabase가 설정되지 않은 경우 샘플 데이터 사용
       const sampleHistory: AnalysisHistory[] = [
         {
@@ -127,7 +183,10 @@ function HistoryPageContent() {
     }
 
     try {
-      const { data, error } = await supabase
+      console.log('🔍 Supabase에서 분석 데이터 직접 조회 시작')
+
+      // 먼저 search_history에서 조회 시도
+      const { data: searchHistoryData, error: searchHistoryError } = await supabase
         .from('search_history')
         .select(
           `
@@ -152,39 +211,124 @@ function HistoryPageContent() {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
-      if (error) {
-        throw error
-      }
+      console.log('📊 search_history에서 조회된 기록 수:', searchHistoryData?.length || 0)
 
-      // 태그 데이터 구조 변환
-      const formattedHistory =
-        data?.map((item: any) => ({
-          ...item,
+      // search_history에 데이터가 없거나 오류가 있으면 analysis 테이블에서 직접 조회
+      if (!searchHistoryData || searchHistoryData.length === 0 || searchHistoryError) {
+        console.log('⚠️ search_history에 데이터가 없음. analysis 테이블에서 직접 조회')
+
+        const { data: analysisData, error: analysisError } = await supabase
+          .from('analysis')
+          .select(
+            `
+            id,
+            title,
+            description,
+            youtube_url,
+            user_description,
+            created_at,
+            analysis_tags (
+              tags (
+                id,
+                name
+              )
+            )
+          `
+          )
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+
+        if (analysisError) {
+          console.error('❌ analysis 테이블 조회 실패:', analysisError)
+          throw analysisError
+        }
+
+        console.log('📊 analysis 테이블에서 조회된 분석 수:', analysisData?.length || 0)
+        console.log('📄 첫 번째 분석:', analysisData?.[0])
+
+        // analysis 데이터를 history 형태로 변환
+        const formattedHistory = analysisData?.map((analysis: any) => ({
+          id: `history-${analysis.id}`, // 임시 검색 기록 ID
+          created_at: analysis.created_at,
           analysis: {
-            id: item.analysis?.id,
-            title: item.analysis?.title,
-            description: item.analysis?.description,
-            youtube_url: item.analysis?.youtube_url,
-            user_description: item.analysis?.user_description,
-            created_at: item.analysis?.created_at,
-            tags:
-              item.analysis?.analysis_tags
-                ?.map((t: any) => t.tags)
-                .filter(Boolean) || [],
+            id: analysis.id,
+            title: analysis.title,
+            description: analysis.description,
+            youtube_url: analysis.youtube_url,
+            user_description: analysis.user_description,
+            created_at: analysis.created_at,
+            tags: analysis.analysis_tags?.map((t: any) => t.tags).filter(Boolean) || [],
           },
         })) || []
 
-      setHistory(formattedHistory)
-      setFilteredHistory(formattedHistory)
+        setHistory(formattedHistory)
+        setFilteredHistory(formattedHistory)
 
-      // 사용 가능한 태그들 추출
+        // 누락된 search_history 레코드들을 자동으로 생성
+        if (analysisData && analysisData.length > 0) {
+          console.log('🔄 누락된 검색 기록들을 자동으로 추가')
+          for (const analysis of analysisData) {
+            try {
+              await supabase
+                .from('search_history')
+                .insert({
+                  analysis_id: analysis.id,
+                  user_id: userId,
+                  created_at: analysis.created_at
+                })
+              console.log('✅ 검색 기록 추가 성공:', analysis.title)
+            } catch (insertError) {
+              console.log('⚠️ 검색 기록 추가 실패:', analysis.title, insertError)
+            }
+          }
+        }
+
+      } else {
+        // search_history 데이터가 있는 경우
+        console.log('✅ search_history에서 데이터 조회 성공')
+        console.log('📊 원본 데이터 샘플:', searchHistoryData?.[0])
+
+        // 태그 데이터 구조 변환
+        const formattedHistory = searchHistoryData?.map((item: any) => {
+          const formattedItem = {
+            id: item.id,
+            created_at: item.created_at,
+            analysis: {
+              id: item.analysis?.id || 'unknown',
+              title: item.analysis?.title || '제목 없음',
+              description: item.analysis?.description || '설명 없음',
+              youtube_url: item.analysis?.youtube_url || '',
+              user_description: item.analysis?.user_description || '',
+              created_at: item.analysis?.created_at || item.created_at,
+              tags: item.analysis?.analysis_tags?.map((t: any) => t.tags).filter(Boolean) || [],
+            },
+          }
+          console.log('🔄 변환된 아이템:', formattedItem)
+          return formattedItem
+        }) || []
+
+        console.log('📋 최종 변환된 데이터:', formattedHistory.length, '개')
+        console.log('📄 첫 번째 변환된 데이터:', formattedHistory[0])
+
+        // 상태 업데이트 전후 로깅
+        console.log('📊 상태 업데이트 전 - 기존 history:', history.length, '개')
+        setHistory(formattedHistory)
+        setFilteredHistory(formattedHistory)
+        console.log('📊 상태 업데이트 완료 - 새로운 데이터:', formattedHistory.length, '개')
+      }
+
+      // 로딩 완료 로그
+      console.log('✅ 데이터 로딩 완료')
+
+      // 사용 가능한 태그들 추출 (기존 로직 유지)
+      const currentHistory = history.length > 0 ? history : filteredHistory
       const tags = Array.from(
         new Set(
-          formattedHistory.flatMap(
-            item => item.analysis.tags?.map((tag: any) => tag.name) || []
+          currentHistory.flatMap(
+            (item: AnalysisHistory) => item.analysis.tags?.map((tag: Tag) => tag.name) || []
           )
         )
-      ).map((name, index) => ({ id: String(index), name }))
+      ).map((name, index) => ({ id: String(index), name: name as string }))
       setAvailableTags(tags)
     } catch (error: any) {
       setError(error.message)
@@ -194,17 +338,26 @@ function HistoryPageContent() {
   }
 
   const applyFilters = () => {
+    console.log('🔍 필터 적용 시작:', {
+      totalHistory: history.length,
+      selectedTag: selectedTag,
+      selectedPeriod: selectedPeriod
+    })
+
     let filtered = [...history]
 
     // 태그 필터
     if (selectedTag) {
+      console.log('🏷️ 태그 필터 적용:', selectedTag)
       filtered = filtered.filter(item =>
         item.analysis.tags?.some(tag => tag.name === selectedTag)
       )
+      console.log('🏷️ 태그 필터 후 결과:', filtered.length)
     }
 
     // 기간 필터
     if (selectedPeriod) {
+      console.log('📅 기간 필터 적용:', selectedPeriod)
       const now = new Date()
       const filterDate = new Date()
 
@@ -226,8 +379,10 @@ function HistoryPageContent() {
       filtered = filtered.filter(
         item => new Date(item.created_at) >= filterDate
       )
+      console.log('📅 기간 필터 후 결과:', filtered.length)
     }
 
+    console.log('✅ 최종 필터링 결과:', filtered.length, '개')
     setFilteredHistory(filtered)
   }
 
@@ -278,9 +433,9 @@ function HistoryPageContent() {
       const updatedHistory = history.map(item =>
         item.analysis.id === analysisId
           ? {
-              ...item,
-              analysis: { ...item.analysis, ...updatedFields },
-            }
+            ...item,
+            analysis: { ...item.analysis, ...updatedFields },
+          }
           : item
       )
       setHistory(updatedHistory)
@@ -299,9 +454,9 @@ function HistoryPageContent() {
       const updatedHistory = history.map(item =>
         item.analysis.id === analysisId
           ? {
-              ...item,
-              analysis: { ...item.analysis, ...updatedFields },
-            }
+            ...item,
+            analysis: { ...item.analysis, ...updatedFields },
+          }
           : item
       )
       setHistory(updatedHistory)
@@ -373,29 +528,30 @@ function HistoryPageContent() {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
-    const diffTime = Math.abs(now.getTime() - date.getTime())
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
+    )
 
-    if (diffDays === 1) {
-      return '오늘'
-    } else if (diffDays === 2) {
-      return '어제'
-    } else if (diffDays <= 7) {
-      return `${diffDays - 1}일 전`
-    } else {
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    }
+    if (diffInHours < 1) return '방금 전'
+    if (diffInHours < 24) return `${diffInHours}시간 전`
+    if (diffInHours < 48) return '어제'
+
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
   }
 
   const extractVideoId = (url: string) => {
-    const match = url.match(
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/
-    )
-    return match ? match[1] : null
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    ]
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return match[1]
+    }
+    return null
   }
 
   const getPeriodDisplayName = (period: string) => {
@@ -403,13 +559,60 @@ function HistoryPageContent() {
       case 'today':
         return '오늘'
       case 'week':
-        return '최근 일주일'
+        return '최근 1주일'
       case 'month':
-        return '최근 한 달'
+        return '최근 1개월'
       case 'quarter':
         return '최근 3개월'
       default:
-        return period
+        return '전체 기간'
+    }
+  }
+
+  // 디버깅 함수 추가
+  const debugDatabaseStatus = async () => {
+    if (!user || !supabase) {
+      console.log('❌ 사용자 또는 Supabase 클라이언트가 없음')
+      return
+    }
+
+    console.log('🔍 데이터베이스 상태 디버깅 시작')
+    console.log('👤 현재 사용자 ID:', user.id)
+
+    try {
+      // analysis 테이블 확인
+      const { data: analysisData, error: analysisError } = await supabase
+        .from('analysis')
+        .select('id, title, created_at, user_id')
+        .eq('user_id', user.id)
+
+      console.log('📊 Analysis 테이블 조회 결과:')
+      console.log('  - 총 개수:', analysisData?.length || 0)
+      console.log('  - 데이터:', analysisData)
+      if (analysisError) console.error('  - 오류:', analysisError)
+
+      // search_history 테이블 확인
+      const { data: historyData, error: historyError } = await supabase
+        .from('search_history')
+        .select('id, analysis_id, user_id, created_at')
+        .eq('user_id', user.id)
+
+      console.log('📋 Search History 테이블 조회 결과:')
+      console.log('  - 총 개수:', historyData?.length || 0)
+      console.log('  - 데이터:', historyData)
+      if (historyError) console.error('  - 오류:', historyError)
+
+      // 누락된 검색 기록 찾기
+      const missingHistory = analysisData?.filter(analysis =>
+        !historyData?.some(history => history.analysis_id === analysis.id)
+      ) || []
+
+      console.log('🔍 누락된 검색 기록:')
+      console.log('  - 개수:', missingHistory.length)
+      console.log('  - 데이터:', missingHistory)
+
+    } catch (error) {
+      console.error('❌ 디버깅 중 오류:', error)
     }
   }
 
@@ -422,6 +625,36 @@ function HistoryPageContent() {
           {user?.user_metadata?.full_name || user?.email}님의 분석한 영상들을
           기록입니다.
         </p>
+        <div style={{ display: 'flex', gap: '10px', marginTop: '10px', alignItems: 'center' }}>
+          <button
+            onClick={() => {
+              console.log('🔄 수동 새로고침 시작')
+              if (user) fetchHistory(user.id)
+            }}
+            className={`${styles.actionBtn} ${styles.primaryBtn}`}
+            style={{ fontSize: '12px' }}
+            disabled={loading}
+          >
+            {loading ? '🔄 로딩중...' : '🔄 새로고침'}
+          </button>
+          <button
+            onClick={debugDatabaseStatus}
+            className={`${styles.actionBtn} ${styles.secondaryBtn}`}
+            style={{ fontSize: '12px' }}
+          >
+            🔍 상태 확인
+          </button>
+          <button
+            onClick={() => {
+              console.log('🔄 강제 페이지 새로고침')
+              window.location.reload()
+            }}
+            className={`${styles.actionBtn} ${styles.primaryBtn}`}
+            style={{ fontSize: '12px', backgroundColor: '#ef4444' }}
+          >
+            🔄 강제 새로고침
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -536,6 +769,24 @@ function HistoryPageContent() {
         )}
       </div>
 
+      {/* 디버깅 정보 표시 */}
+      <div style={{
+        backgroundColor: '#f0f9ff',
+        border: '1px solid #bae6fd',
+        borderRadius: '8px',
+        padding: '1rem',
+        marginBottom: '1rem',
+        fontSize: '0.875rem'
+      }}>
+        <div><strong>🔍 디버깅 정보:</strong></div>
+        <div>전체 기록 수: {history.length}</div>
+        <div>필터링된 기록 수: {filteredHistory.length}</div>
+        <div>선택된 태그: {selectedTag || '없음'}</div>
+        <div>선택된 기간: {selectedPeriod || '없음'}</div>
+        <div>로딩 상태: {loading ? '로딩중' : '완료'}</div>
+        <div>오류 상태: {error || '없음'}</div>
+      </div>
+
       {loading ? (
         <div className={styles.loading}>
           <div className={styles.spinner}></div>
@@ -601,9 +852,9 @@ function HistoryPageContent() {
                           />
                         </div>
 
-                        {/* 개인 메모 편집 */}
+                        {/* 비공개 메모 편집 */}
                         <div className={styles.inputGroup}>
-                          <label className={styles.inputLabel}>개인 메모</label>
+                          <label className={styles.inputLabel}>비공개 메모</label>
                           <input
                             type='text'
                             value={editingValues.user_description}
@@ -614,7 +865,7 @@ function HistoryPageContent() {
                               })
                             }
                             className={styles.input}
-                            placeholder='개인 메모를 입력하세요...'
+                            placeholder='비공개 메모를 입력하세요...'
                           />
                         </div>
 
@@ -702,11 +953,11 @@ function HistoryPageContent() {
                           {item.analysis.description}
                         </p>
 
-                        {/* 개인 메모 표시 */}
+                        {/* 비공개 메모 표시 */}
                         {item.analysis.user_description && (
                           <div className={styles.userMemo}>
                             <label className={styles.memoLabel}>
-                              개인 메모
+                              비공개 메모
                             </label>
                             <span className={styles.memoText}>
                               {item.analysis.user_description}

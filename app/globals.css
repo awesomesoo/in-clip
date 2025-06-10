@@ -300,14 +300,14 @@ main {
 }
 
 .nav {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 8px;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .nav {
-    display: flex;
+    display: none;
   }
 }
 

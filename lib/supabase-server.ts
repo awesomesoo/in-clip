@@ -1,37 +1,26 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { Database } from './supabase'
 
-// 환경 변수가 없을 경우 데모 모드용 설정
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://demo.supabase.co'
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'demo-key'
-
-// 데모 서버 클라이언트 생성
-const createDemoServerClient = () => {
-    return {
-        from: (table: string) => ({
-            select: () => ({
-                eq: () => ({
-                    single: async () => ({ data: null, error: { message: '데모 모드: 실제 데이터베이스에 연결되지 않았습니다.' } }),
-                    order: () => ({
-                        limit: async () => ({ data: [], error: null })
-                    })
-                }),
-                order: () => ({
-                    limit: async () => ({ data: [], error: null })
-                }),
-                single: async () => ({ data: null, error: { message: '데모 모드: 실제 데이터베이스에 연결되지 않았습니다.' } }),
-                limit: async () => ({ data: [], error: null })
-            })
-        })
-    } as any
-}
-
+// 서버 사이드에서 사용할 Supabase 클라이언트 (RLS 우회 가능)
 export const createServerClient = () => {
-    // 환경 변수가 제대로 설정되어 있으면 실제 Supabase 클라이언트 사용
-    if (supabaseUrl !== 'https://demo.supabase.co' && supabaseAnonKey !== 'demo-key') {
-        return createSupabaseClient(supabaseUrl, supabaseAnonKey)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseServiceRoleKey) {
+        console.log('⚠️ Supabase 환경 변수가 설정되지 않음')
+        return null
     }
 
-    // 그렇지 않으면 데모 클라이언트 반환
-    return createDemoServerClient()
+    console.log('🔑 서버 클라이언트 생성 시도:', {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseServiceRoleKey,
+        keyType: supabaseServiceRoleKey.startsWith('sbp_') ? 'service_role' : 'anon'
+    })
+
+    return createSupabaseClient<Database>(supabaseUrl, supabaseServiceRoleKey, {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    })
 } 

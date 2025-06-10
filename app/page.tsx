@@ -6,11 +6,34 @@ import { useAuth } from '@/lib/auth-context'
 import { supabase } from '@/lib/supabase'
 import type { Analysis } from '@/lib/supabase'
 
+interface YoutubeAnalysis {
+  videoId: string
+  url: string
+  transcript: string
+  saved?: boolean
+  savedId?: string
+  analysis: {
+    title: string
+    summary: string
+    keyPoints: string[]
+    category: string
+    sentiment: string
+    difficulty: string
+    duration_estimate: string
+    tags: string[]
+  }
+}
+
 export default function HomePage() {
   const [url, setUrl] = useState('')
   const [analyses, setAnalyses] = useState<Analysis[]>([])
   const [loading, setLoading] = useState(true)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysisResult, setAnalysisResult] = useState<YoutubeAnalysis | null>(null)
+  const [analysisError, setAnalysisError] = useState<string | null>(null)
   const { isSupabaseConfigured } = useAuth()
+
+
 
   useEffect(() => {
     fetchAnalyses()
@@ -20,14 +43,27 @@ export default function HomePage() {
     try {
       // Supabase가 설정되지 않았으면 샘플 데이터 사용
       if (!supabase) {
-        // 샘플 데이터 설정
-        const sampleData: Analysis[] = [
+        // 샘플 데이터 설정 (AI 분석 결과 포함)
+        const sampleData = [
           {
             id: '1',
             youtube_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
             title: 'React 18 새로운 기능 소개',
-            description:
-              'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다. Concurrent Features, Suspense 개선사항 등을 다룹니다.',
+            description: 'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다.',
+            ai_summary: 'React 18은 Concurrent Features, Suspense 개선사항, 자동 배치 처리 등 많은 새로운 기능을 제공합니다. 이 영상에서는 실무에서 바로 활용할 수 있는 핵심 변경사항들을 상세히 다룹니다.',
+            key_points: [
+              'Concurrent Features로 더 나은 사용자 경험 제공',
+              'Suspense 개선으로 로딩 상태 관리 최적화',
+              '자동 배치 처리로 성능 향상',
+              'StrictMode 변경사항과 마이그레이션 가이드'
+            ],
+            category: '프론트엔드',
+            sentiment: '긍정적',
+            difficulty: '중급',
+            duration_estimate: '25분',
+            ai_tags: ['React', '프론트엔드', 'JavaScript', '웹개발'],
+            video_id: 'dQw4w9WgXcQ',
+            thumbnail_url: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: 'sample',
@@ -42,10 +78,23 @@ export default function HomePage() {
           },
           {
             id: '2',
-            youtube_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+            youtube_url: 'https://youtube.com/watch?v=TypeScript123',
             title: 'TypeScript 타입 시스템 완벽 가이드',
-            description:
-              'TypeScript의 타입 시스템에 대한 심층 분석입니다. 고급 타입 기법과 실무 활용법을 설명합니다.',
+            description: 'TypeScript의 타입 시스템에 대한 심층 분석입니다.',
+            ai_summary: 'TypeScript의 고급 타입 시스템을 마스터하기 위한 완전한 가이드입니다. 제네릭, 유니온 타입, 인터섹션 타입 등 실무에서 필요한 모든 타입 기법을 다룹니다.',
+            key_points: [
+              '제네릭을 활용한 재사용 가능한 코드 작성',
+              '유니온과 인터섹션 타입의 실전 활용법',
+              '조건부 타입으로 동적 타입 생성',
+              '타입 가드와 타입 좁히기 기법'
+            ],
+            category: '프론트엔드',
+            sentiment: '중립적',
+            difficulty: '고급',
+            duration_estimate: '40분',
+            ai_tags: ['TypeScript', '타입시스템', '프론트엔드', '개발'],
+            video_id: 'TypeScript123',
+            thumbnail_url: 'https://img.youtube.com/vi/TypeScript123/hqdefault.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: 'sample',
@@ -60,10 +109,23 @@ export default function HomePage() {
           },
           {
             id: '3',
-            youtube_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
+            youtube_url: 'https://youtube.com/watch?v=DeepLearning456',
             title: '딥러닝 기초부터 실전까지',
-            description:
-              '딥러닝의 기본 개념부터 실제 프로젝트까지 다루는 포괄적인 가이드입니다.',
+            description: '딥러닝의 기본 개념부터 실제 프로젝트까지 다루는 포괄적인 가이드입니다.',
+            ai_summary: '딥러닝의 기초 이론부터 실제 프로젝트 구현까지 단계별로 학습할 수 있는 종합 가이드입니다. 신경망, CNN, RNN 등 핵심 개념을 쉽게 설명합니다.',
+            key_points: [
+              '신경망의 기본 원리와 구조 이해',
+              'CNN을 활용한 이미지 분류 프로젝트',
+              'RNN과 LSTM으로 시계열 데이터 처리',
+              '실무에서 사용하는 모델 최적화 기법'
+            ],
+            category: 'AI',
+            sentiment: '긍정적',
+            difficulty: '중급',
+            duration_estimate: '60분',
+            ai_tags: ['딥러닝', 'AI', '머신러닝', '데이터사이언스'],
+            video_id: 'DeepLearning456',
+            thumbnail_url: 'https://img.youtube.com/vi/DeepLearning456/hqdefault.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: 'sample',
@@ -76,7 +138,7 @@ export default function HomePage() {
               },
             ],
           },
-        ]
+        ] as any[]
         setAnalyses(sampleData)
         return
       }
@@ -132,11 +194,59 @@ export default function HomePage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (url.trim()) {
-      const encodedUrl = encodeURIComponent(url)
-      window.location.href = `/analyze?url=${encodedUrl}`
+
+    if (!url.trim()) {
+      return
+    }
+
+    setAnalyzing(true)
+    setAnalysisError(null)
+    setAnalysisResult(null)
+
+    try {
+      const response = await fetch('/api/youtube-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: url.trim() }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || '분석 중 오류가 발생했습니다.')
+      }
+
+      if (data.success && data.data) {
+        setAnalysisResult(data.data)
+        setAnalysisError(null)
+
+        // 분석 결과가 저장되었으면 목록 새로고침
+        if (data.data.saved) {
+          fetchAnalyses()
+        }
+
+        // 분석 결과로 스크롤
+        setTimeout(() => {
+          document.getElementById('analysis-result')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          })
+        }, 100)
+      } else if (data.error) {
+        setAnalysisError(data.error)
+        setAnalysisResult(null)
+      } else {
+        setAnalysisError('예상과 다른 응답을 받았습니다.')
+        setAnalysisResult(null)
+      }
+    } catch (error) {
+      setAnalysisError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -176,11 +286,18 @@ export default function HomePage() {
                   style={{ fontSize: '1.125rem' }}
                   required
                 />
-                <button type='submit' className='btn btn-primary' style={{ padding: '1rem 2rem', fontSize: '1.125rem', width: '100%' }}>
-                  요약하기
+                <button
+                  type='submit'
+                  className='btn btn-primary'
+                  style={{ padding: '1rem 2rem', fontSize: '1.125rem', width: '100%' }}
+                  disabled={analyzing}
+                >
+                  {analyzing ? '분석중...' : '요약하기'}
                 </button>
               </div>
             </form>
+
+
 
             {/* Sub Actions */}
             <div
@@ -217,6 +334,229 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+
+
+      {/* Analysis Result Section */}
+      {(analyzing || analysisResult || analysisError) && (
+        <section id='analysis-result' className='section-padding bg-white border-t border-gray-200'>
+          <div className='container'>
+            <div className='max-w-4xl mx-auto'>
+              {analyzing && (
+                <div className='text-center' style={{ padding: '2rem' }}>
+                  <div className='animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4'></div>
+                  <h3 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#111827', marginBottom: '1rem' }}>
+                    영상을 분석하고 있습니다...
+                  </h3>
+                  <p style={{ color: '#6b7280' }}>
+                    자막을 추출하고 AI가 내용을 분석하는 중입니다. 잠시만 기다려주세요.
+                  </p>
+                </div>
+              )}
+
+              {analysisError && (
+                <div className='bg-red-50 border border-red-200 rounded-lg p-6 text-center'>
+                  <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>❌</div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '600', color: '#dc2626', marginBottom: '1rem' }}>
+                    분석 실패
+                  </h3>
+                  <p style={{ color: '#dc2626', marginBottom: '1rem' }}>
+                    {analysisError}
+                  </p>
+                  <button
+                    onClick={() => {
+                      setAnalysisError(null)
+                      setUrl('')
+                    }}
+                    className='btn btn-outline'
+                    style={{ padding: '0.5rem 1rem' }}
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              )}
+
+              {analysisResult && (
+                <div className='bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden'>
+                  {/* 영상 정보 헤더 */}
+                  <div className='bg-gradient-to-r from-blue-50 to-indigo-50 p-6'>
+                    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
+                      <div style={{ flex: '0 0 auto' }}>
+                        <img
+                          src={`https://img.youtube.com/vi/${analysisResult.videoId}/hqdefault.jpg`}
+                          alt='비디오 썸네일'
+                          className='rounded-lg'
+                          style={{ width: '160px', height: '120px', objectFit: 'cover' }}
+                        />
+                      </div>
+                      <div style={{ flex: '1', minWidth: '0' }}>
+                        <h2 style={{
+                          fontSize: '1.5rem',
+                          fontWeight: '700',
+                          color: '#111827',
+                          marginBottom: '1rem',
+                          lineHeight: '1.3'
+                        }}>
+                          {analysisResult.analysis.title}
+                        </h2>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                          <span className='badge badge-primary'>{analysisResult.analysis.category}</span>
+                          <span className='badge badge-outline'>{analysisResult.analysis.difficulty}</span>
+                          <span className='badge badge-outline'>{analysisResult.analysis.sentiment}</span>
+                          <span className='badge badge-outline'>⏱️ {analysisResult.analysis.duration_estimate}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 분석 내용 */}
+                  <div className='p-6'>
+                    {/* 요약 */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: '#111827',
+                        marginBottom: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        📋 요약
+                      </h3>
+                      <p style={{
+                        fontSize: '1rem',
+                        lineHeight: '1.6',
+                        color: '#374151',
+                        background: '#f9fafb',
+                        padding: '1rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        {analysisResult.analysis.summary}
+                      </p>
+                    </div>
+
+                    {/* 주요 포인트 */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: '#111827',
+                        marginBottom: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        🎯 주요 포인트
+                      </h3>
+                      <ul style={{ listStyle: 'none', padding: '0' }}>
+                        {analysisResult.analysis.keyPoints.map((point, index) => (
+                          <li
+                            key={index}
+                            style={{
+                              padding: '0.75rem',
+                              marginBottom: '0.5rem',
+                              background: '#f8fafc',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '0.5rem',
+                              display: 'flex',
+                              alignItems: 'start',
+                              gap: '0.75rem'
+                            }}
+                          >
+                            <span style={{
+                              background: '#3b82f6',
+                              color: 'white',
+                              borderRadius: '50%',
+                              width: '1.5rem',
+                              height: '1.5rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '0.75rem',
+                              fontWeight: '600',
+                              flexShrink: '0'
+                            }}>
+                              {index + 1}
+                            </span>
+                            <span style={{ color: '#374151', lineHeight: '1.5' }}>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* 태그 */}
+                    <div style={{ marginBottom: '2rem' }}>
+                      <h3 style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '600',
+                        color: '#111827',
+                        marginBottom: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem'
+                      }}>
+                        🏷️ 관련 태그
+                      </h3>
+                      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {analysisResult.analysis.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            className='badge badge-secondary'
+                            style={{ fontSize: '0.875rem' }}
+                          >
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* 액션 버튼 */}
+                    <div style={{
+                      display: 'flex',
+                      gap: '1rem',
+                      paddingTop: '1.5rem',
+                      borderTop: '1px solid #e5e7eb'
+                    }}>
+                      <button
+                        onClick={() => window.open(analysisResult.url, '_blank')}
+                        className='btn btn-primary'
+                        style={{ flex: '1' }}
+                      >
+                        🎥 원본 영상 보기
+                      </button>
+                      {analysisResult.saved && (
+                        <button
+                          onClick={() => {
+                            const link = document.createElement('a')
+                            link.href = '/analyze'
+                            link.click()
+                          }}
+                          className='btn btn-secondary'
+                          style={{ padding: '0.75rem 1.5rem' }}
+                        >
+                          📋 내 분석 기록 보기
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setAnalysisResult(null)
+                          setUrl('')
+                        }}
+                        className='btn btn-outline'
+                        style={{ padding: '0.75rem 1.5rem' }}
+                      >
+                        새로 분석하기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Sample Results Section */}
       <section id='samples' className='section-padding bg-gray-50'>
@@ -370,26 +710,70 @@ export default function HomePage() {
                         WebkitBoxOrient: 'vertical',
                         overflow: 'hidden'
                       }}>
-                        {analysis.description}
+                        {(analysis as any).ai_summary || analysis.description}
                       </p>
 
-                      {/* 태그 섹션 */}
-                      {analysis.tags && analysis.tags.length > 0 && (
+                      {/* AI 메타데이터 */}
+                      {((analysis as any).category || (analysis as any).difficulty || (analysis as any).sentiment) && (
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
-                          {analysis.tags.map(tag => (
-                            <span
-                              key={tag.id}
-                              className='bg-blue-100 text-blue-600'
-                              style={{
-                                padding: '0.25rem 0.75rem',
-                                borderRadius: '9999px',
-                                fontSize: '0.75rem',
-                                fontWeight: '500'
-                              }}
-                            >
-                              #{tag.name}
+                          {(analysis as any).category && (
+                            <span className='badge badge-primary' style={{ fontSize: '0.75rem' }}>
+                              {(analysis as any).category}
                             </span>
-                          ))}
+                          )}
+                          {(analysis as any).difficulty && (
+                            <span className='badge badge-outline' style={{ fontSize: '0.75rem' }}>
+                              {(analysis as any).difficulty}
+                            </span>
+                          )}
+                          {(analysis as any).sentiment && (
+                            <span className='badge badge-outline' style={{ fontSize: '0.75rem' }}>
+                              {(analysis as any).sentiment}
+                            </span>
+                          )}
+                          {(analysis as any).duration_estimate && (
+                            <span className='badge badge-outline' style={{ fontSize: '0.75rem' }}>
+                              ⏱️ {(analysis as any).duration_estimate}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* AI 태그 또는 기존 태그 섹션 */}
+                      {(((analysis as any).ai_tags && (analysis as any).ai_tags.length > 0) || (analysis.tags && analysis.tags.length > 0)) && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                          {/* AI 태그 우선 표시 */}
+                          {(analysis as any).ai_tags && (analysis as any).ai_tags.length > 0 ? (
+                            (analysis as any).ai_tags.slice(0, 3).map((tag: string, index: number) => (
+                              <span
+                                key={index}
+                                className='bg-blue-100 text-blue-600'
+                                style={{
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500'
+                                }}
+                              >
+                                #{tag}
+                              </span>
+                            ))
+                          ) : (
+                            analysis.tags?.slice(0, 3).map(tag => (
+                              <span
+                                key={tag.id}
+                                className='bg-blue-100 text-blue-600'
+                                style={{
+                                  padding: '0.25rem 0.75rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '500'
+                                }}
+                              >
+                                #{tag.name}
+                              </span>
+                            ))
+                          )}
                         </div>
                       )}
 
@@ -515,7 +899,7 @@ export default function HomePage() {
                       북마크 및 메모 기능
                     </h3>
                     <p className='text-gray-600'>
-                      중요한 영상은 북마크하고 개인 메모를 추가해서 나만의 지식
+                      중요한 영상은 북마크하고 비공개 메모를 추가해서 나만의 지식
                       라이브러리를 만들어보세요.
                     </p>
                   </div>

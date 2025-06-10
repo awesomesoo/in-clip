@@ -1,47 +1,120 @@
-import { createServerClient } from '../../../lib/supabase-server'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 interface PageProps {
-    params: {
+    params: Promise<{
         name: string
-    }
+    }>
 }
 
-export default async function TagAnalysisPage({ params }: PageProps) {
-    const tagName = decodeURIComponent(params.name)
-    const supabase = createServerClient()
+interface Analysis {
+    id: string
+    title: string
+    description: string
+    youtube_url: string
+    user_description?: string
+    created_at: string
+    updated_at: string
+}
 
-    const { data: tagData, error: tagError } = await supabase
-        .from('tags')
-        .select(`
-      id,
-      name,
-      created_at,
-      analysis_tags (
-        analysis (
-          id,
-          title,
-          description,
-          youtube_url,
-          created_at,
-          analysis_tags (
-            tags (
-              id,
-              name
-            )
-          )
-        )
-      )
-    `)
-        .eq('name', tagName)
-        .single()
+export default function TagPage({ params }: PageProps) {
+    const [analyses, setAnalyses] = useState<Analysis[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+    const [resolvedParams, setResolvedParams] = useState<{ name: string } | null>(null)
 
-    if (tagError || !tagData) {
-        notFound()
+    useEffect(() => {
+        const resolveParams = async () => {
+            const resolved = await params
+            setResolvedParams(resolved)
+        }
+        resolveParams()
+    }, [params])
+
+    useEffect(() => {
+        if (resolvedParams) {
+            loadAnalyses()
+        }
+    }, [resolvedParams])
+
+    const loadAnalyses = async () => {
+        if (!resolvedParams) return
+
+        try {
+            if (!supabase) {
+                // Supabase가 설정되지 않은 경우 샘플 데이터 사용
+                const sampleAnalyses: Analysis[] = [
+                    {
+                        id: '1',
+                        title: 'React 18 새로운 기능 소개',
+                        description:
+                            'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다.\n\n주요 내용:\n1. Concurrent Features - React 18의 가장 큰 변화\n2. Suspense 개선사항 - 데이터 로딩 최적화\n3. Automatic Batching - 성능 향상\n4. useId Hook - SSR 호환성 개선\n\n이러한 새로운 기능들을 통해 React 애플리케이션의 성능과 사용자 경험을 크게 향상시킬 수 있습니다.',
+                        youtube_url: 'https://youtube.com/watch?v=sample1',
+                        user_description: '대학 강의 정리용',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    },
+                    {
+                        id: '2',
+                        title: '요리 초보를 위한 파스타 만들기',
+                        description:
+                            '집에서 간단하게 만들 수 있는 맛있는 파스타 레시피를 소개합니다.\n\n재료:\n- 스파게티 면 200g\n- 마늘 3쪽\n- 올리브오일 3큰술\n- 파마산 치즈\n- 소금, 후추\n\n조리 과정:\n1. 물을 끓여 스파게티를 삶습니다\n2. 팬에 올리브오일과 마늘을 볶아 향을 냅니다\n3. 삶은 스파게티를 팬에 넣고 볶습니다\n4. 파마산 치즈를 뿌려 완성합니다',
+                        youtube_url: 'https://youtube.com/watch?v=sample2',
+                        user_description: '주말 요리 연습용',
+                        created_at: new Date(Date.now() - 86400000).toISOString(),
+                        updated_at: new Date(Date.now() - 86400000).toISOString(),
+                    },
+                ]
+
+                // 태그 이름에 따라 필터링 (샘플 데이터용)
+                const tagNameDecoded = decodeURIComponent(resolvedParams.name)
+                const filteredAnalyses = sampleAnalyses.filter((analysis, index) => {
+                    // 간단한 필터링 로직 (실제로는 태그 관계를 확인해야 함)
+                    return tagNameDecoded === '프론트엔드' ? index === 0 : index === 1
+                })
+
+                setAnalyses(filteredAnalyses)
+                return
+            }
+
+            const tagNameDecoded = decodeURIComponent(resolvedParams.name)
+
+            // 태그별 분석 조회
+            const { data, error } = await supabase
+                .from('analysis')
+                .select(
+                    `
+                    id,
+                    title,
+                    description,
+                    youtube_url,
+                    user_description,
+                    created_at,
+                    updated_at,
+                    analysis_tags!inner (
+                        tags!inner (
+                            name
+                        )
+                    )
+                `
+                )
+                .eq('analysis_tags.tags.name', tagNameDecoded)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+
+            setAnalyses(data || [])
+        } catch (error: any) {
+            console.error('Error loading analyses:', error)
+            setError('데이터를 불러오는 중 오류가 발생했습니다.')
+        } finally {
+            setLoading(false)
+        }
     }
-
-    const analyses = tagData.analysis_tags?.map((at: any) => at.analysis).filter(Boolean) || []
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString)
@@ -81,10 +154,10 @@ export default async function TagAnalysisPage({ params }: PageProps) {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
-                    #{tagName}
+                    #{resolvedParams?.name}
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                    '{tagName}' 태그 분석글
+                    '{resolvedParams?.name}' 태그 분석글
                 </h1>
                 <p className="text-gray-600">
                     총 {analyses.length}개의 분석글이 있습니다.
@@ -140,7 +213,7 @@ export default async function TagAnalysisPage({ params }: PageProps) {
                                                 <Link
                                                     key={tagRelation.tags.id}
                                                     href={`/tags/${encodeURIComponent(tagRelation.tags.name)}`}
-                                                    className={`px-2 py-1 text-xs rounded-full transition-colors ${tagRelation.tags.name === tagName
+                                                    className={`px-2 py-1 text-xs rounded-full transition-colors ${tagRelation.tags.name === resolvedParams?.name
                                                         ? 'bg-blue-200 text-blue-900 font-medium'
                                                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                                         }`}
@@ -182,7 +255,7 @@ export default async function TagAnalysisPage({ params }: PageProps) {
                             </svg>
                         </div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">이 태그에 해당하는 분석글이 없습니다</h3>
-                        <p className="text-gray-600 mb-4">'{tagName}' 태그로 첫 번째 분석을 추가해보세요!</p>
+                        <p className="text-gray-600 mb-4">'{resolvedParams?.name}' 태그로 첫 번째 분석을 추가해보세요!</p>
                         <Link href="/analyze" className="btn btn-primary">
                             분석 시작하기
                         </Link>
@@ -193,8 +266,8 @@ export default async function TagAnalysisPage({ params }: PageProps) {
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
                 <h3 className="font-semibold text-gray-900 mb-2">태그 정보</h3>
                 <div className="text-sm text-gray-600 space-y-1">
-                    <p>• 태그명: #{tagName}</p>
-                    <p>• 생성일: {formatDate(tagData.created_at)}</p>
+                    <p>• 태그명: #{resolvedParams?.name}</p>
+                    <p>• 생성일: {formatDate(resolvedParams?.created_at || '')}</p>
                     <p>• 분석글 수: {analyses.length}개</p>
                 </div>
             </div>

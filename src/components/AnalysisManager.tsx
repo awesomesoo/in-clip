@@ -22,6 +22,16 @@ interface AnalysisWithTags {
   created_at: string
   updated_at: string
   user_id: string
+  video_id?: string
+  thumbnail_url?: string
+  transcript?: string
+  ai_summary?: string
+  key_points?: string[]
+  category?: string
+  sentiment?: string
+  difficulty?: string
+  duration_estimate?: string
+  ai_tags?: string[]
   tags?: { id: string; name: string }[]
 }
 
@@ -222,7 +232,7 @@ export default function AnalysisManager() {
 
                   <div>
                     <label className='block text-sm font-medium text-gray-700 mb-1'>
-                      개인 메모
+                      비공개 메모
                     </label>
                     <input
                       type='text'
@@ -291,43 +301,133 @@ export default function AnalysisManager() {
                     </div>
                   </div>
 
-                  <div className='space-y-2'>
-                    <p className='text-gray-700'>{analysis.description}</p>
-
-                    {analysis.user_description && (
-                      <p className='text-sm text-blue-600'>
-                        📝 {analysis.user_description}
-                      </p>
-                    )}
-
-                    <p className='text-sm text-gray-500'>
-                      🔗{' '}
-                      <a
-                        href={analysis.youtube_url}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='text-blue-600 hover:underline'
-                      >
-                        YouTube 링크
-                      </a>
-                    </p>
-
-                    {analysis.tags && analysis.tags.length > 0 && (
-                      <div className='flex gap-2 flex-wrap'>
-                        {analysis.tags.map(tag => (
-                          <span
-                            key={tag.id}
-                            className='px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full'
-                          >
-                            {tag.name}
-                          </span>
-                        ))}
+                  <div className='space-y-4'>
+                    {/* 영상 정보 */}
+                    {analysis.video_id && (
+                      <div className='flex gap-4 p-4 bg-gray-50 rounded-lg'>
+                        <img
+                          src={`https://img.youtube.com/vi/${analysis.video_id}/hqdefault.jpg`}
+                          alt='비디오 썸네일'
+                          className='w-24 h-18 rounded object-cover'
+                        />
+                        <div className='flex-1'>
+                          <div className='flex gap-2 mb-2'>
+                            {analysis.category && (
+                              <span className='px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full'>
+                                {analysis.category}
+                              </span>
+                            )}
+                            {analysis.difficulty && (
+                              <span className='px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full'>
+                                {analysis.difficulty}
+                              </span>
+                            )}
+                            {analysis.sentiment && (
+                              <span className='px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full'>
+                                {analysis.sentiment}
+                              </span>
+                            )}
+                            {analysis.duration_estimate && (
+                              <span className='px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full'>
+                                ⏱️ {analysis.duration_estimate}
+                              </span>
+                            )}
+                          </div>
+                          <p className='text-sm text-gray-500'>
+                            🔗{' '}
+                            <a
+                              href={analysis.youtube_url}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='text-blue-600 hover:underline'
+                            >
+                              YouTube 링크
+                            </a>
+                          </p>
+                        </div>
                       </div>
                     )}
 
-                    <p className='text-xs text-gray-400'>
-                      생성일:{' '}
-                      {new Date(analysis.created_at).toLocaleString('ko-KR')}
+                    {/* AI 요약 */}
+                    {analysis.ai_summary && (
+                      <div className='p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500'>
+                        <h4 className='font-semibold text-blue-900 mb-2 flex items-center gap-2'>
+                          🤖 AI 요약
+                        </h4>
+                        <p className='text-blue-800 text-sm leading-relaxed'>
+                          {analysis.ai_summary}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 주요 포인트 */}
+                    {analysis.key_points && analysis.key_points.length > 0 && (
+                      <div className='p-4 bg-green-50 rounded-lg'>
+                        <h4 className='font-semibold text-green-900 mb-3 flex items-center gap-2'>
+                          🎯 주요 포인트
+                        </h4>
+                        <ul className='space-y-2'>
+                          {analysis.key_points.map((point, index) => (
+                            <li key={index} className='flex items-start gap-2 text-sm'>
+                              <span className='bg-green-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5'>
+                                {index + 1}
+                              </span>
+                              <span className='text-green-800'>{point}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* 기존 설명 */}
+                    <div className='p-4 bg-gray-50 rounded-lg'>
+                      <h4 className='font-semibold text-gray-900 mb-2'>📄 설명</h4>
+                      <p className='text-gray-700 text-sm'>{analysis.description}</p>
+                    </div>
+
+                    {analysis.user_description && (
+                      <p className='text-sm text-blue-600 bg-blue-50 p-3 rounded-lg'>
+                        📝 <strong>비공개 메모:</strong> {analysis.user_description}
+                      </p>
+                    )}
+
+                    {/* 태그 섹션 */}
+                    <div className='space-y-2'>
+                      {analysis.ai_tags && analysis.ai_tags.length > 0 && (
+                        <div>
+                          <h5 className='text-sm font-medium text-gray-700 mb-1'>AI 추천 태그</h5>
+                          <div className='flex gap-1 flex-wrap'>
+                            {analysis.ai_tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className='px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full'
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {analysis.tags && analysis.tags.length > 0 && (
+                        <div>
+                          <h5 className='text-sm font-medium text-gray-700 mb-1'>사용자 태그</h5>
+                          <div className='flex gap-1 flex-wrap'>
+                            {analysis.tags.map(tag => (
+                              <span
+                                key={tag.id}
+                                className='px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full'
+                              >
+                                {tag.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className='text-xs text-gray-400 pt-2 border-t'>
+                      생성일: {new Date(analysis.created_at).toLocaleString('ko-KR')}
                     </p>
                   </div>
                 </div>
