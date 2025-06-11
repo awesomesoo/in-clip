@@ -922,30 +922,6 @@ function HistoryPageContent() {
                             <span className={styles.dateText}>
                               {formatDate(item.created_at)}
                             </span>
-                            <button
-                              onClick={() =>
-                                startEditAnalysis(
-                                  item.analysis.id,
-                                  item.analysis
-                                )
-                              }
-                              className={styles.editBtn}
-                            >
-                              <svg
-                                className={styles.icon}
-                                fill='none'
-                                stroke='currentColor'
-                                viewBox='0 0 24 24'
-                              >
-                                <path
-                                  strokeLinecap='round'
-                                  strokeLinejoin='round'
-                                  strokeWidth={2}
-                                  d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
-                                />
-                              </svg>
-                              편집
-                            </button>
                           </div>
                         </div>
 
@@ -981,27 +957,83 @@ function HistoryPageContent() {
                     {/* 액션 버튼 */}
                     <div className={styles.actions}>
                       <Link
-                        href={`/analysis/${item.analysis.id}`}
-                        className={`${styles.actionBtn} ${styles.primaryBtn}`}
-                      >
-                        분석 보기
-                      </Link>
-                      <a
                         href={item.analysis.youtube_url}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className={`${styles.actionBtn} ${styles.secondaryBtn}`}
+                        className={styles.cardLink}
                       >
-                        원본 영상
-                      </a>
+                        <svg
+                          className={styles.cardLinkIcon}
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
+                          />
+                        </svg>
+                        YouTube에서 보기
+                      </Link>
+                      <Link
+                        href={`/analysis/${item.analysis.id}`}
+                        className={styles.cardLink}
+                      >
+                        <svg
+                          className={styles.cardLinkIcon}
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                          />
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z'
+                          />
+                        </svg>
+                        자세히 보기
+                      </Link>
+                      <button
+                        onClick={() =>
+                          startEditAnalysis(
+                            item.analysis.id,
+                            item.analysis
+                          )
+                        }
+                        className={styles.editBtn}
+                      >
+                        <svg
+                          className={styles.cardLinkIcon}
+                          fill='none'
+                          stroke='currentColor'
+                          viewBox='0 0 24 24'
+                        >
+                          <path
+                            strokeLinecap='round'
+                            strokeLinejoin='round'
+                            strokeWidth={2}
+                            d='M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'
+                          />
+                        </svg>
+                        편집
+                      </button>
                       <button
                         onClick={() =>
                           deleteHistory(item.id, item.analysis.title)
                         }
-                        className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                        className={styles.deleteBtn}
                       >
                         <svg
-                          className={styles.icon}
+                          className={styles.cardLinkIcon}
                           fill='none'
                           stroke='currentColor'
                           viewBox='0 0 24 24'

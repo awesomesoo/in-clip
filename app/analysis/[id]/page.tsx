@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import styles from './AnalysisDetail.module.css'
 
 interface PageProps {
   params: Promise<{
@@ -192,6 +193,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
           )
           .map(analysis => ({
             ...analysis,
+            updated_at: analysis.created_at, // updated_at 필드 추가
             tags:
               analysis.analysis_tags?.map((t: any) => t.tags).filter(Boolean) ||
               [],
@@ -234,17 +236,10 @@ export default function AnalysisDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div
-        className='section-padding bg-gray-50'
-        style={{ minHeight: '100vh' }}
-      >
-        <div className='container'>
-          <div className='max-w-4xl mx-auto'>
-            <div className='text-center py-12'>
-              <div className='inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500'></div>
-              <p className='mt-4 text-gray-600'>로딩 중...</p>
-            </div>
-          </div>
+      <div className={styles.container}>
+        <div className={styles.loadingState}>
+          <div className={styles.loadingSpinner}></div>
+          <p className={styles.loadingText}>분석을 불러오는 중...</p>
         </div>
       </div>
     )
@@ -252,39 +247,25 @@ export default function AnalysisDetailPage({ params }: PageProps) {
 
   if (error || !analysis) {
     return (
-      <div
-        className='section-padding bg-gray-50'
-        style={{ minHeight: '100vh' }}
-      >
-        <div className='container'>
-          <div className='max-w-4xl mx-auto'>
-            <div className='text-center py-12'>
-              <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4'>
-                <svg
-                  className='w-8 h-8 text-gray-400'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-                  />
-                </svg>
-              </div>
-              <h3 className='text-lg font-medium text-gray-900 mb-2'>
-                분석을 찾을 수 없습니다
-              </h3>
-              <p className='text-gray-600 mb-4'>
-                {error || '요청하신 분석이 존재하지 않습니다.'}
-              </p>
-              <Link href='/feed' className='btn btn-primary'>
-                피드로 돌아가기
-              </Link>
-            </div>
+      <div className={styles.container}>
+        <div className={styles.errorState}>
+          <div className={styles.errorIcon}>
+            <svg fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
+            </svg>
           </div>
+          <h3 className={styles.errorTitle}>분석을 찾을 수 없습니다</h3>
+          <p className={styles.errorMessage}>
+            {error || '요청하신 분석이 존재하지 않습니다.'}
+          </p>
+          <Link href='/feed' className={styles.backButton}>
+            피드로 돌아가기
+          </Link>
         </div>
       </div>
     )
@@ -293,225 +274,206 @@ export default function AnalysisDetailPage({ params }: PageProps) {
   const videoId = extractVideoId(analysis.youtube_url)
 
   return (
-    <div className='section-padding bg-gray-50' style={{ minHeight: '100vh' }}>
-      <div className='container'>
-        <div className='max-w-4xl mx-auto space-y-8'>
-          <div className='flex items-center gap-4 mb-6'>
-            <Link
-              href='/feed'
-              className='text-blue-600 hover:text-blue-700 flex items-center gap-1'
-            >
-              <svg
-                className='w-4 h-4'
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth={2}
-                  d='M15 19l-7-7 7-7'
-                />
-              </svg>
-              피드로 돌아가기
-            </Link>
-          </div>
+    <div className={styles.container}>
+      <div className={styles.content}>
+        {/* 상단 네비게이션 */}
+        <div className={styles.navigation}>
+          <Link href='/feed' className={styles.backLink}>
+            <svg fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M15 19l-7-7 7-7'
+              />
+            </svg>
+            피드로 돌아가기
+          </Link>
+        </div>
 
-          <article className='card'>
-            <header className='space-y-4 mb-8'>
-              <h1 className='text-3xl font-bold text-gray-900'>
-                {analysis.title}
-              </h1>
+        {/* 메인 분석 카드 */}
+        <article className={styles.mainCard}>
+          {/* 헤더 섹션 */}
+          <header className={styles.header}>
+            <h1 className={styles.title}>{analysis.title}</h1>
 
-              <div className='flex flex-wrap items-center gap-4 text-sm text-gray-500'>
-                <span>작성일: {formatDate(analysis.created_at)}</span>
-                {analysis.updated_at !== analysis.created_at && (
-                  <span>수정일: {formatDate(analysis.updated_at)}</span>
-                )}
-              </div>
-
-              {analysis.tags && analysis.tags.length > 0 && (
-                <div className='flex flex-wrap gap-2'>
-                  {analysis.tags.map(tag => (
-                    <Link
-                      key={tag.id}
-                      href={`/feed?tag=${encodeURIComponent(tag.name)}`}
-                      className='px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full hover:bg-blue-200 transition-colors'
-                    >
-                      #{tag.name}
-                    </Link>
-                  ))}
-                </div>
+            <div className={styles.metadata}>
+              <span className={styles.date}>📅 {formatDate(analysis.created_at)}</span>
+              {analysis.updated_at !== analysis.created_at && (
+                <span className={styles.date}>🔄 수정일: {formatDate(analysis.updated_at)}</span>
               )}
-            </header>
+            </div>
 
-            {/* 유튜브 임베드 */}
-            {videoId && (
-              <div className='mb-8'>
-                <h2 className='text-xl font-semibold text-gray-900 mb-4'>
-                  영상 시청
-                </h2>
-                <div className='aspect-video bg-gray-200 rounded-lg overflow-hidden'>
-                  <iframe
-                    src={`https://www.youtube.com/embed/${videoId}`}
-                    title={analysis.title}
-                    frameBorder='0'
-                    allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
-                    allowFullScreen
-                    className='w-full h-full'
-                  ></iframe>
-                </div>
+            {/* 태그 */}
+            {analysis.tags && analysis.tags.length > 0 && (
+              <div className={styles.tagContainer}>
+                {analysis.tags.map(tag => (
+                  <Link
+                    key={tag.id}
+                    href={`/feed?tag=${encodeURIComponent(tag.name)}`}
+                    className={styles.tag}
+                  >
+                    #{tag.name}
+                  </Link>
+                ))}
               </div>
             )}
+          </header>
 
-            <div className='space-y-6'>
-              {/* 사용자 메모 */}
-              {analysis.user_description && (
-                <div className='bg-blue-50 border border-blue-200 rounded-lg p-4'>
-                  <div className='flex items-center gap-2 mb-2'>
-                    <svg
-                      className='w-5 h-5 text-blue-600'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'
-                      />
-                    </svg>
-                    <span className='text-sm font-medium text-blue-800'>
-                      비공개 메모
-                    </span>
-                  </div>
-                  <p className='text-blue-700'>{analysis.user_description}</p>
+          {/* 유튜브 비디오 섹션 */}
+          {videoId && (
+            <section className={styles.videoSection}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.sectionIcon}>🎥</span>
+                영상 시청
+              </h2>
+              <div className={styles.videoWrapper}>
+                <iframe
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title={analysis.title}
+                  frameBorder='0'
+                  allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
+                  allowFullScreen
+                  className={styles.video}
+                ></iframe>
+              </div>
+            </section>
+          )}
+
+          {/* 콘텐츠 섹션 */}
+          <div className={styles.contentSections}>
+            {/* 사용자 메모 */}
+            {analysis.user_description && (
+              <section className={styles.memoSection}>
+                <div className={styles.memoHeader}>
+                  <span className={styles.memoIcon}>📝</span>
+                  <span className={styles.memoTitle}>비공개 메모</span>
                 </div>
-              )}
+                <p className={styles.memoContent}>{analysis.user_description}</p>
+              </section>
+            )}
 
-              <div>
-                <h2 className='text-xl font-semibold text-gray-900 mb-3'>
-                  유튜브 영상
-                </h2>
-                <div className='bg-gray-50 rounded-lg p-4'>
+            {/* 유튜브 링크 섹션 */}
+            <section className={styles.linkSection}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.sectionIcon}>🔗</span>
+                유튜브 영상
+              </h2>
+              <div className={styles.linkContainer}>
+                <Link
+                  href={analysis.youtube_url}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className={styles.youtubeLink}
+                >
+                  <svg className={styles.linkIcon} fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
+                    />
+                  </svg>
+                  원본 영상에서 보기
+                </Link>
+              </div>
+            </section>
+
+            {/* 분석 내용 섹션 */}
+            <section className={styles.analysisSection}>
+              <h2 className={styles.sectionTitle}>
+                <span className={styles.sectionIcon}>📄</span>
+                분석 내용
+              </h2>
+              <div className={styles.analysisContent}>
+                <div className={styles.contentText}>
+                  {analysis.description.split('\n').map((paragraph, index) => (
+                    <p key={index} className={styles.paragraph}>
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </section>
+          </div>
+        </article>
+
+        {/* 관련 분석 섹션 */}
+        {relatedAnalyses.length > 0 && (
+          <section className={styles.relatedSection}>
+            <h3 className={styles.relatedTitle}>
+              <span className={styles.sectionIcon}>🔍</span>
+              관련 분석
+            </h3>
+            <div className={styles.relatedGrid}>
+              {relatedAnalyses.map(relatedAnalysis => {
+                const relatedVideoId = extractVideoId(relatedAnalysis.youtube_url)
+                const thumbnailUrl = relatedVideoId
+                  ? `https://img.youtube.com/vi/${relatedVideoId}/mqdefault.jpg`
+                  : null
+
+                return (
                   <Link
-                    href={analysis.youtube_url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='text-blue-600 hover:text-blue-700 break-all flex items-center gap-2'
+                    key={relatedAnalysis.id}
+                    href={`/analysis/${relatedAnalysis.id}`}
+                    className={styles.relatedCard}
                   >
-                    <svg
-                      className='w-5 h-5 flex-shrink-0'
-                      fill='none'
-                      stroke='currentColor'
-                      viewBox='0 0 24 24'
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        strokeWidth={2}
-                        d='M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14'
-                      />
-                    </svg>
-                    {analysis.youtube_url}
-                  </Link>
-                </div>
-              </div>
-
-              <div>
-                <h2 className='text-xl font-semibold text-gray-900 mb-3'>
-                  분석 내용
-                </h2>
-                <div className='prose max-w-none'>
-                  <p className='text-gray-700 whitespace-pre-wrap leading-relaxed'>
-                    {analysis.description}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </article>
-
-          {/* 관련 분석 */}
-          {relatedAnalyses.length > 0 && (
-            <div className='card'>
-              <h3 className='text-xl font-semibold text-gray-900 mb-6'>
-                관련 분석
-              </h3>
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                {relatedAnalyses.map(relatedAnalysis => {
-                  const relatedVideoId = extractVideoId(
-                    relatedAnalysis.youtube_url
-                  )
-                  const thumbnailUrl = relatedVideoId
-                    ? `https://img.youtube.com/vi/${relatedVideoId}/mqdefault.jpg`
-                    : null
-
-                  return (
-                    <Link
-                      key={relatedAnalysis.id}
-                      href={`/analysis/${relatedAnalysis.id}`}
-                      className='block bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all'
-                    >
-                      {thumbnailUrl && (
+                    {thumbnailUrl && (
+                      <div className={styles.relatedThumbnail}>
                         <img
                           src={thumbnailUrl}
                           alt={relatedAnalysis.title}
-                          className='w-full h-32 object-cover rounded-t-lg'
+                          className={styles.relatedImage}
                           onError={e => {
                             e.currentTarget.style.display = 'none'
                           }}
                         />
-                      )}
-                      <div className='p-4'>
-                        <h4 className='font-medium text-gray-900 line-clamp-2 mb-2'>
-                          {relatedAnalysis.title}
-                        </h4>
-                        <p className='text-sm text-gray-600 line-clamp-2 mb-2'>
-                          {relatedAnalysis.description}
-                        </p>
-                        {relatedAnalysis.tags &&
-                          relatedAnalysis.tags.length > 0 && (
-                            <div className='flex flex-wrap gap-1'>
-                              {relatedAnalysis.tags.slice(0, 2).map(tag => (
-                                <span
-                                  key={tag.id}
-                                  className='px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded'
-                                >
-                                  #{tag.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
                       </div>
-                    </Link>
-                  )
-                })}
-              </div>
+                    )}
+                    <div className={styles.relatedContent}>
+                      <h4 className={styles.relatedCardTitle}>
+                        {relatedAnalysis.title}
+                      </h4>
+                      <p className={styles.relatedDescription}>
+                        {relatedAnalysis.description.substring(0, 80)}...
+                      </p>
+                      {relatedAnalysis.tags && relatedAnalysis.tags.length > 0 && (
+                        <div className={styles.relatedTags}>
+                          {relatedAnalysis.tags.slice(0, 2).map(tag => (
+                            <span key={tag.id} className={styles.relatedTag}>
+                              #{tag.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
-          )}
+          </section>
+        )}
 
-          {/* 액션 버튼들 */}
-          <div className='bg-white border border-gray-200 rounded-lg p-6'>
-            <h3 className='font-semibold text-gray-900 mb-4'>작업</h3>
-            <div className='flex flex-wrap gap-3'>
+        {/* 액션 섹션 */}
+        <section className={styles.actionsSection}>
+          <div className={styles.actionsCard}>
+            <h3 className={styles.actionsTitle}>
+              <span className={styles.sectionIcon}>⚡</span>
+              작업
+            </h3>
+            <div className={styles.actionButtons}>
               <button
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(window.location.href)
+                    // TODO: 토스트 알림 추가
                   } catch (err) {
-                    // Silent fail
+                    console.error('클립보드 복사 실패:', err)
                   }
                 }}
-                className='btn btn-secondary text-sm flex items-center gap-2'
+                className={styles.actionButton}
               >
-                <svg
-                  className='w-4 h-4'
-                  fill='none'
-                  stroke='currentColor'
-                  viewBox='0 0 24 24'
-                >
+                <svg className={styles.actionIcon} fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                   <path
                     strokeLinecap='round'
                     strokeLinejoin='round'
@@ -521,32 +483,37 @@ export default function AnalysisDetailPage({ params }: PageProps) {
                 </svg>
                 링크 복사
               </button>
-              <Link href='/feed' className='btn btn-outline text-sm'>
+              <Link href='/feed' className={styles.actionButtonSecondary}>
+                <span className={styles.sectionIcon}>🌟</span>
                 더 많은 분석 보기
               </Link>
-              <Link href='/analyze' className='btn btn-outline text-sm'>
+              <Link href='/analyze' className={styles.actionButtonSecondary}>
+                <span className={styles.sectionIcon}>✨</span>
                 새로운 분석 추가
               </Link>
             </div>
           </div>
+        </section>
 
-          <div className='bg-blue-50 border border-blue-200 rounded-lg p-6'>
-            <h3 className='font-semibold text-blue-900 mb-2'>
-              이 분석이 도움이 되셨나요?
-            </h3>
-            <p className='text-blue-700 text-sm mb-4'>
-              다른 유용한 영상들도 커뮤니티에서 확인해보세요!
-            </p>
-            <div className='flex gap-3'>
-              <Link href='/feed' className='btn btn-primary text-sm'>
-                더 많은 분석 보기
-              </Link>
-              <Link href='/analyze' className='btn btn-secondary text-sm'>
-                새로운 분석 추가
-              </Link>
+        {/* CTA 섹션 */}
+        <section className={styles.ctaSection}>
+          <div className={styles.ctaCard}>
+            <div className={styles.ctaContent}>
+              <h3 className={styles.ctaTitle}>이 분석이 도움이 되셨나요?</h3>
+              <p className={styles.ctaDescription}>
+                다른 유용한 영상들도 커뮤니티에서 확인해보세요!
+              </p>
+              <div className={styles.ctaButtons}>
+                <Link href='/feed' className={styles.ctaButtonPrimary}>
+                  🚀 더 많은 분석 보기
+                </Link>
+                <Link href='/analyze' className={styles.ctaButtonSecondary}>
+                  📝 새로운 분석 추가
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   )

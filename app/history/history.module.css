@@ -424,8 +424,11 @@
 
 .actions {
   display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
   flex-wrap: wrap;
-  gap: 1rem;
 }
 
 .actionBtn {
@@ -467,9 +470,18 @@
 }
 
 .deleteBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   background: linear-gradient(135deg, #fee2e2, #fecaca);
   color: #dc2626;
-  border-color: #f87171;
+  border: 1px solid #f87171;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 .deleteBtn:hover {
@@ -477,6 +489,60 @@
   border-color: #ef4444;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* 커뮤니티 스타일과 동일한 카드 링크 스타일 */
+.cardLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border: 1px solid #e2e8f0;
+}
+
+.cardLink:hover {
+  color: #1d4ed8;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.cardLinkIcon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* 편집 버튼 스타일 */
+.editBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #059669;
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.editBtn:hover {
+  color: #047857;
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border-color: #6ee7b7;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.2);
 }
 
 .emptyState {
@@ -562,9 +628,12 @@
   .actions {
     flex-direction: column;
     align-items: flex-start;
+    gap: 1rem;
   }
 
-  .actionBtn {
+  .cardLink,
+  .editBtn,
+  .deleteBtn {
     width: 100%;
     justify-content: center;
   }
