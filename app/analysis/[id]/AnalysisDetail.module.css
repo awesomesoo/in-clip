@@ -193,6 +193,34 @@
     transform: translateY(-1px);
 }
 
+/* 메타데이터 뱃지 */
+.metadataBadges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.badge {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: 1px solid #2563eb;
+}
+
+.badgeOutline {
+    background: #f8fafc;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 0.5rem 1rem;
+    border-radius: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
 /* 섹션 공통 스타일 */
 .sectionTitle {
     font-size: 1.25rem;
@@ -335,6 +363,108 @@
 
 .paragraph:empty {
     display: none;
+}
+
+/* AI 요약 섹션 */
+.summarySection {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #bfdbfe;
+    border-left: 4px solid #3b82f6;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.summaryContent {
+    margin-top: 1rem;
+}
+
+.summaryText {
+    color: #1e40af;
+    line-height: 1.6;
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* 주요 포인트 섹션 */
+.keyPointsSection {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.keyPointsContent {
+    margin-top: 1rem;
+}
+
+.keyPointsList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.keyPointItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.keyPointItem:last-child {
+    margin-bottom: 0;
+}
+
+.keyPointNumber {
+    background: #166534;
+    color: white;
+    border-radius: 50%;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+}
+
+.keyPointText {
+    color: #166534;
+    line-height: 1.5;
+    flex: 1;
+}
+
+/* AI 태그 섹션 */
+.aiTagsSection {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fdf4ff 0%, #f3e8ff 100%);
+    border: 1px solid #e9d5ff;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.aiTagsContent {
+    margin-top: 1rem;
+}
+
+.aiTagsList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.aiTag {
+    background: linear-gradient(135deg, #fae8ff 0%, #e9d5ff 100%);
+    color: #7c2d92;
+    border: 1px solid #c084fc;
+    padding: 0.4rem 0.8rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
 /* 관련 분석 섹션 */

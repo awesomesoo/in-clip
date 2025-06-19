@@ -24,14 +24,25 @@ interface YoutubeAnalysis {
   }
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  created_at: string;
+  user_id: string;
+}
+
+interface AnalysisWithTags extends Analysis {
+  tags: Tag[];
+}
+
 export default function HomePage() {
   const [url, setUrl] = useState('')
-  const [analyses, setAnalyses] = useState<Analysis[]>([])
+  const [analyses, setAnalyses] = useState<AnalysisWithTags[]>([])
   const [loading, setLoading] = useState(true)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisResult, setAnalysisResult] = useState<YoutubeAnalysis | null>(null)
   const [analysisError, setAnalysisError] = useState<string | null>(null)
-  const { isSupabaseConfigured } = useAuth()
+  const { user } = useAuth()
 
 
 
@@ -41,29 +52,30 @@ export default function HomePage() {
 
   const fetchAnalyses = async () => {
     try {
-      // Supabase가 설정되지 않았으면 샘플 데이터 사용
-      if (!supabase) {
-        // 샘플 데이터 설정 (AI 분석 결과 포함)
+      // 강제로 샘플 데이터 사용 (테스트용)
+      console.log('🎬 샘플 데이터 강제 사용!')
+      if (true) { // 임시로 true로 변경
+        // 샘플 데이터 설정 (실제 YouTube 비디오 ID 사용)
         const sampleData = [
           {
             id: '1',
-            youtube_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
-            title: 'React 18 새로운 기능 소개',
-            description: 'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다.',
-            ai_summary: 'React 18은 Concurrent Features, Suspense 개선사항, 자동 배치 처리 등 많은 새로운 기능을 제공합니다. 이 영상에서는 실무에서 바로 활용할 수 있는 핵심 변경사항들을 상세히 다룹니다.',
+            youtube_url: 'https://youtube.com/watch?v=Tn6-PIqc4UM',
+            title: 'React in 100 Seconds',
+            description: 'React의 핵심 개념을 100초만에 배워보세요.',
+            ai_summary: 'React는 현대 웹 개발의 핵심 라이브러리입니다. 컴포넌트 기반 아키텍처, 가상 DOM, JSX 문법 등 React의 주요 특징들을 간단명료하게 설명합니다.',
             key_points: [
-              'Concurrent Features로 더 나은 사용자 경험 제공',
-              'Suspense 개선으로 로딩 상태 관리 최적화',
-              '자동 배치 처리로 성능 향상',
-              'StrictMode 변경사항과 마이그레이션 가이드'
+              '컴포넌트 기반 UI 개발',
+              '가상 DOM으로 성능 최적화',
+              'JSX 문법의 편리함',
+              '현대적인 웹 개발 패러다임'
             ],
             category: '프론트엔드',
             sentiment: '긍정적',
-            difficulty: '중급',
-            duration_estimate: '25분',
+            difficulty: '초급',
+            duration_estimate: '2분',
             ai_tags: ['React', '프론트엔드', 'JavaScript', '웹개발'],
-            video_id: 'dQw4w9WgXcQ',
-            thumbnail_url: 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg',
+            video_id: 'Tn6-PIqc4UM',
+            thumbnail_url: 'https://img.youtube.com/vi/Tn6-PIqc4UM/hqdefault.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: 'sample',
@@ -78,23 +90,23 @@ export default function HomePage() {
           },
           {
             id: '2',
-            youtube_url: 'https://youtube.com/watch?v=TypeScript123',
-            title: 'TypeScript 타입 시스템 완벽 가이드',
-            description: 'TypeScript의 타입 시스템에 대한 심층 분석입니다.',
-            ai_summary: 'TypeScript의 고급 타입 시스템을 마스터하기 위한 완전한 가이드입니다. 제네릭, 유니온 타입, 인터섹션 타입 등 실무에서 필요한 모든 타입 기법을 다룹니다.',
+            youtube_url: 'https://youtube.com/watch?v=zQnBQ4tB3ZA',
+            title: 'TypeScript in 100 Seconds',
+            description: 'TypeScript의 핵심을 빠르게 학습해보세요.',
+            ai_summary: 'TypeScript는 JavaScript에 정적 타입을 추가한 언어입니다. 타입 안정성, 개발자 경험 향상, 대규모 애플리케이션 개발에서의 이점을 소개합니다.',
             key_points: [
-              '제네릭을 활용한 재사용 가능한 코드 작성',
-              '유니온과 인터섹션 타입의 실전 활용법',
-              '조건부 타입으로 동적 타입 생성',
-              '타입 가드와 타입 좁히기 기법'
+              'JavaScript의 상위 집합',
+              '정적 타입 시스템의 장점',
+              '개발 도구와의 완벽한 통합',
+              '컴파일 타임 오류 검출'
             ],
             category: '프론트엔드',
-            sentiment: '중립적',
-            difficulty: '고급',
-            duration_estimate: '40분',
+            sentiment: '긍정적',
+            difficulty: '초급',
+            duration_estimate: '2분',
             ai_tags: ['TypeScript', '타입시스템', '프론트엔드', '개발'],
-            video_id: 'TypeScript123',
-            thumbnail_url: 'https://img.youtube.com/vi/TypeScript123/hqdefault.jpg',
+            video_id: 'zQnBQ4tB3ZA',
+            thumbnail_url: 'https://img.youtube.com/vi/zQnBQ4tB3ZA/hqdefault.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: 'sample',
@@ -109,23 +121,23 @@ export default function HomePage() {
           },
           {
             id: '3',
-            youtube_url: 'https://youtube.com/watch?v=DeepLearning456',
-            title: '딥러닝 기초부터 실전까지',
-            description: '딥러닝의 기본 개념부터 실제 프로젝트까지 다루는 포괄적인 가이드입니다.',
-            ai_summary: '딥러닝의 기초 이론부터 실제 프로젝트 구현까지 단계별로 학습할 수 있는 종합 가이드입니다. 신경망, CNN, RNN 등 핵심 개념을 쉽게 설명합니다.',
+            youtube_url: 'https://youtube.com/watch?v=aircAruvnKk',
+            title: 'But what is a neural network?',
+            description: '신경망의 기본 개념을 시각적으로 이해해보세요.',
+            ai_summary: '3Blue1Brown의 유명한 신경망 설명 영상입니다. 수학적 개념을 직관적인 시각화로 설명하여 머신러닝의 기초를 쉽게 이해할 수 있도록 도와줍니다.',
             key_points: [
-              '신경망의 기본 원리와 구조 이해',
-              'CNN을 활용한 이미지 분류 프로젝트',
-              'RNN과 LSTM으로 시계열 데이터 처리',
-              '실무에서 사용하는 모델 최적화 기법'
+              '뉴런과 시냅스의 모델링',
+              '가중치와 편향의 역할',
+              '활성화 함수의 중요성',
+              '딥러닝의 기본 원리'
             ],
             category: 'AI',
             sentiment: '긍정적',
             difficulty: '중급',
-            duration_estimate: '60분',
+            duration_estimate: '19분',
             ai_tags: ['딥러닝', 'AI', '머신러닝', '데이터사이언스'],
-            video_id: 'DeepLearning456',
-            thumbnail_url: 'https://img.youtube.com/vi/DeepLearning456/hqdefault.jpg',
+            video_id: 'aircAruvnKk',
+            thumbnail_url: 'https://img.youtube.com/vi/aircAruvnKk/hqdefault.jpg',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
             user_id: 'sample',
@@ -161,20 +173,19 @@ export default function HomePage() {
       // 태그 데이터 구조 변환
       const formattedData = data.map(analysis => ({
         ...analysis,
-        tags: analysis.tags.map((t: any) => t.tag),
+        tags: analysis.tags.map((t: { tag: Tag }) => t.tag),
       }))
 
       setAnalyses(formattedData)
     } catch (error) {
       console.error('Error fetching analyses:', error)
       // 에러가 발생하면 샘플 데이터 사용
-      const sampleData: Analysis[] = [
+      const sampleData: AnalysisWithTags[] = [
         {
           id: '1',
-          youtube_url: 'https://youtube.com/watch?v=dQw4w9WgXcQ',
-          title: 'React 18 새로운 기능 소개',
-          description:
-            'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다.',
+          youtube_url: 'https://youtube.com/watch?v=Tn6-PIqc4UM',
+          title: 'React in 100 Seconds',
+          description: 'React의 핵심 개념을 100초만에 배워보세요.',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           user_id: 'sample',
@@ -324,7 +335,7 @@ export default function HomePage() {
                   예시 보기
                 </button>
                 <Link href='/feed' className='text-blue-600 underline'>
-                  커뮤니티 피드 둘러보기
+                  다른 사용자의 분석 둘러보기
                 </Link>
               </div>
               <span className='text-gray-500'>
@@ -606,38 +617,96 @@ export default function HomePage() {
               analyses.map(analysis => {
                 // YouTube 비디오 ID 추출 개선
                 const getYouTubeVideoId = (url: string) => {
+                  console.log('🎬 URL 처리 중:', url)
                   try {
                     const urlObj = new URL(url)
-                    return (
-                      urlObj.searchParams.get('v') ||
-                      url.split('v=')[1]?.split('&')[0]
-                    )
+                    const videoId = urlObj.searchParams.get('v') || url.split('v=')[1]?.split('&')[0]
+                    console.log('🎬 추출된 비디오 ID:', videoId)
+                    return videoId
                   } catch {
-                    return url.split('v=')[1]?.split('&')[0]
+                    const videoId = url.split('v=')[1]?.split('&')[0]
+                    console.log('🎬 Fallback 비디오 ID:', videoId)
+                    return videoId
                   }
                 }
 
-                const videoId = getYouTubeVideoId(analysis.youtube_url)
+                // 전체 analysis 객체 확인
+                console.log('🎬 Analysis 객체:', analysis)
+
+                // 샘플 데이터에 video_id가 있으면 우선 사용
+                const videoId = (analysis as any).video_id || getYouTubeVideoId(analysis.youtube_url)
+                console.log('🎬 video_id 필드:', (analysis as any).video_id)
+                console.log('🎬 youtube_url:', analysis.youtube_url)
+                console.log('🎬 최종 사용할 비디오 ID:', videoId, 'for', analysis.title)
 
                 return (
                   <div
                     key={analysis.id}
                     className='sample-card'
-                    style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+                    style={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                      cursor: 'pointer'
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-4px)'
+                      e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'translateY(0)'
+                      e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
+                    }}
                   >
-                    <div className='aspect-video bg-gray-200 rounded-lg' style={{ marginBottom: '1rem', overflow: 'hidden', position: 'relative' }}>
+                    <div
+                      className='aspect-video bg-gray-200 rounded-lg'
+                      style={{
+                        marginBottom: '1rem',
+                        overflow: 'hidden',
+                        position: 'relative',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => window.open(analysis.youtube_url, '_blank')}
+                    >
                       {videoId ? (
-                        <img
-                          src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                          alt={analysis.title}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          onError={e => {
-                            // 이미지 로드 실패 시 기본 썸네일로 변경
-                            ; (
-                              e.target as HTMLImageElement
-                            ).src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-                          }}
-                        />
+                        <>
+                          <img
+                            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                            alt={analysis.title}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              transition: 'transform 0.3s ease'
+                            }}
+                            onLoad={() => console.log('🎬 썸네일 로드 성공:', videoId)}
+                            onError={e => {
+                              console.log('🎬 maxres 실패, hq로 시도:', videoId)
+                              // 이미지 로드 실패 시 기본 썸네일로 변경
+                              const target = e.target as HTMLImageElement
+                              target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+                              target.onerror = () => {
+                                console.log('🎬 hq도 실패, 기본 이미지로:', videoId)
+                                target.style.display = 'none'
+                              }
+                            }}
+                          />
+                          {/* YouTube 로고 오버레이 */}
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '0.5rem',
+                            left: '0.5rem',
+                            background: 'rgba(0, 0, 0, 0.8)',
+                            color: 'white',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '0.25rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500'
+                          }}>
+                            YouTube
+                          </div>
+                        </>
                       ) : (
                         <div style={{
                           width: '100%',
@@ -645,7 +714,7 @@ export default function HomePage() {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: '#d1d5db'
+                          background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)'
                         }}>
                           <svg
                             style={{ width: '3rem', height: '3rem', color: '#6b7280' }}
@@ -656,6 +725,24 @@ export default function HomePage() {
                           </svg>
                         </div>
                       )}
+
+                      {/* 재생 시간 오버레이 (우하단) */}
+                      {(analysis as any).duration_estimate && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '0.5rem',
+                          right: '0.5rem',
+                          background: 'rgba(0, 0, 0, 0.8)',
+                          color: 'white',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '0.25rem',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}>
+                          {(analysis as any).duration_estimate}
+                        </div>
+                      )}
+
                       {/* 재생 아이콘 오버레이 */}
                       <div style={{
                         position: 'absolute',
@@ -665,19 +752,21 @@ export default function HomePage() {
                         justifyContent: 'center',
                         opacity: '0',
                         transition: 'opacity 0.3s ease',
-                        background: 'rgba(0, 0, 0, 0.3)'
+                        background: 'rgba(0, 0, 0, 0.4)'
                       }} className='hover-opacity'>
                         <div style={{
-                          width: '3.5rem',
-                          height: '3.5rem',
-                          background: 'rgba(255, 255, 255, 0.9)',
+                          width: '4rem',
+                          height: '4rem',
+                          background: 'rgba(255, 255, 255, 0.95)',
                           borderRadius: '50%',
                           display: 'flex',
                           alignItems: 'center',
-                          justifyContent: 'center'
+                          justifyContent: 'center',
+                          transform: 'scale(0.9)',
+                          transition: 'transform 0.2s ease'
                         }}>
                           <svg
-                            style={{ width: '1.25rem', height: '1.25rem', color: '#1f2937', marginLeft: '0.25rem' }}
+                            style={{ width: '1.5rem', height: '1.5rem', color: '#dc2626', marginLeft: '0.25rem' }}
                             fill='currentColor'
                             viewBox='0 0 24 24'
                           >
@@ -688,18 +777,33 @@ export default function HomePage() {
                     </div>
 
                     <div style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
-                      <h3 style={{
-                        fontWeight: '600',
-                        fontSize: '1.125rem',
-                        marginBottom: '0.75rem',
-                        color: '#111827',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
-                      }}>
-                        {analysis.title}
-                      </h3>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                        <h3 style={{
+                          fontWeight: '600',
+                          fontSize: '1.125rem',
+                          color: '#111827',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          flex: '1',
+                          marginRight: '0.5rem'
+                        }}>
+                          {analysis.title}
+                        </h3>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          color: '#9ca3af',
+                          whiteSpace: 'nowrap',
+                          marginTop: '0.25rem'
+                        }}>
+                          {new Date(analysis.created_at).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
                       <p style={{
                         color: '#4b5563',
                         fontSize: '0.875rem',
@@ -708,7 +812,8 @@ export default function HomePage() {
                         display: '-webkit-box',
                         WebkitLineClamp: 3,
                         WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        lineHeight: '1.4'
                       }}>
                         {(analysis as any).ai_summary || analysis.description}
                       </p>
@@ -969,7 +1074,7 @@ export default function HomePage() {
                 무료로 시작하기
               </Link>
               <Link href='/feed' className='btn btn-secondary'>
-                커뮤니티 둘러보기
+                다른 사용자의 분석 둘러보기
               </Link>
             </div>
             <p className='text-gray-500' style={{ fontSize: '0.875rem' }}>

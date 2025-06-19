@@ -62,11 +62,10 @@ export default function TestEnvPage() {
               <div>
                 <strong>NEXT_PUBLIC_SUPABASE_URL:</strong>
                 <div
-                  className={`mt-2 p-3 rounded ${
-                    isValidUrl
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-red-50 border border-red-200'
-                  }`}
+                  className={`mt-2 p-3 rounded ${isValidUrl
+                    ? 'bg-green-50 border border-green-200'
+                    : 'bg-red-50 border border-red-200'
+                    }`}
                 >
                   {supabaseUrl || '설정되지 않음'}
                   <div className='text-sm mt-1'>
@@ -78,11 +77,10 @@ export default function TestEnvPage() {
               <div>
                 <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY:</strong>
                 <div
-                  className={`mt-2 p-3 rounded ${
-                    isValidKey
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-red-50 border border-red-200'
-                  }`}
+                  className={`mt-2 p-3 rounded ${isValidKey
+                    ? 'bg-green-50 border border-green-200'
+                    : 'bg-red-50 border border-red-200'
+                    }`}
                 >
                   {supabaseAnonKey
                     ? `${supabaseAnonKey.substring(0, 20)}...`
@@ -102,11 +100,10 @@ export default function TestEnvPage() {
               <div>
                 <strong>Supabase 클라이언트:</strong>
                 <p
-                  className={`mt-2 p-3 rounded ${
-                    isSupabaseConfigured
-                      ? 'bg-green-50 border border-green-200'
-                      : 'bg-yellow-50 border border-yellow-200'
-                  }`}
+                  className={`mt-2 p-3 rounded ${isSupabaseConfigured
+                    ? 'bg-green-50 border border-green-200'
+                    : 'bg-yellow-50 border border-yellow-200'
+                    }`}
                 >
                   {isSupabaseConfigured ? '✅ 설정됨' : '⚠️ 데모 모드'}
                 </p>
@@ -125,8 +122,8 @@ export default function TestEnvPage() {
                   {loading
                     ? '확인 중...'
                     : user
-                    ? `✅ 로그인됨: ${user.email}`
-                    : '❌ 로그인되지 않음'}
+                      ? `✅ 로그인됨: ${user.email}`
+                      : '❌ 로그인되지 않음'}
                 </p>
               </div>
             </div>

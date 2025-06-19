@@ -9,6 +9,20 @@ import { YoutubeTranscript } from 'youtube-transcript'
 // Gemini AI 설정
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
+interface CaptionTrack {
+    language_code: string;
+}
+
+interface VideoInfo {
+    basic_info: {
+        title: string;
+        short_description: string;
+    };
+    captions: {
+        caption_tracks: CaptionTrack[];
+    };
+}
+
 export async function POST(request: NextRequest) {
     try {
         const { url } = await request.json()
@@ -115,13 +129,13 @@ export async function POST(request: NextRequest) {
                         const captionTracks = video.captions.caption_tracks
 
                         // 한국어 자막 우선 검색
-                        let captionTrack = captionTracks.find((track: any) =>
+                        let captionTrack = captionTracks.find((track: CaptionTrack) =>
                             track.language_code === 'ko' || track.language_code === 'kr'
                         )
 
                         // 한국어가 없으면 영어 검색
                         if (!captionTrack) {
-                            captionTrack = captionTracks.find((track: any) =>
+                            captionTrack = captionTracks.find((track: CaptionTrack) =>
                                 track.language_code === 'en' || track.language_code.startsWith('en')
                             )
                         }
@@ -196,7 +210,7 @@ ${videoDescription ? videoDescription.substring(0, 2000) : '설명 없음'}
 응답 형식:
 {
   "title": "유튜브 영상 (자막 없음)",
-  "summary": "이 영상은 자막을 추출할 수 없어서 상세한 분석이 어렵습니다. 영상을 직접 시청하시기를 권장합니다.",
+  "summary": "이 영상은 자막을 추출할 수 없어서 상세한 분석이 어렵습니다. 영상을 직접 시청하시기를 권장합니다.\n\n✨ 한줄 요약: 자막이 제공되지 않는 유튜브 영상입니다.",
   "keyPoints": [
     "자막이 제공되지 않는 영상입니다",
     "직접 시청을 통해 내용을 확인해주세요",
@@ -211,21 +225,25 @@ ${videoDescription ? videoDescription.substring(0, 2000) : '설명 없음'}
 
 반드시 유효한 JSON 형식으로만 응답해주세요.
     ` : `
-다음은 유튜브 영상의 자막입니다. 이를 분석하여 아래 형식으로 응답해주세요:
+다음은 유튜브 영상의 자막입니다. 자막의 흐름을 토대로 핵심 내용을 요약하여 아래 형식으로 응답해주세요:
 
 자막 내용:
 ${transcript}
 
+요약 시 다음 사항을 준수하세요:
+1. 유튜브 자막을 바탕으로 핵심 요약을 생성해 주세요
+
+
 응답 형식:
 {
   "title": "영상의 제목을 추론하여 작성",
-  "summary": "영상의 핵심 내용을 3-4문장으로 요약",
+  "summary": "자막의 흐름을 따라 영상의 핵심 내용을 체계적으로 요약 (도입부 → 전개 → 결론 순서로 정리)\n\n✨ 한줄 요약: 영상의 핵심 메시지를 한 문장으로 압축",
   "keyPoints": [
-    "주요 포인트 1",
-    "주요 포인트 2",
-    "주요 포인트 3"
+    "영상에서 강조한 주요 포인트 1",
+    "영상에서 강조한 주요 포인트 2", 
+    "영상에서 강조한 주요 포인트 3"
   ],
-  "category": "영상의 카테고리 (예: 교육, 기술, 엔터테인먼트, 뉴스 등)",
+  "category": "영상의 카테고리 (예: 교육, 기술, 엔터테인먼트, 뉴스, 뷰티, 건강, 생활정보 등)",
   "sentiment": "영상의 전반적인 감정 (긍정적, 부정적, 중립적)",
   "difficulty": "내용의 난이도 (초급, 중급, 고급)",
   "duration_estimate": "예상 시청 시간 (분 단위)",
@@ -241,7 +259,7 @@ ${transcript}
             // JSON 파싱 시도
             try {
                 analysis = JSON.parse(responseText)
-            } catch (parseError) {
+            } catch (error) {
                 // JSON 파싱 실패 시 텍스트에서 JSON 부분 추출 시도
                 const jsonMatch = responseText.match(/\{[\s\S]*\}/)
                 if (jsonMatch) {

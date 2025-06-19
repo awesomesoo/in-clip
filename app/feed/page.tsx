@@ -18,6 +18,17 @@ interface Tag {
   name: string
 }
 
+interface TagRelation {
+  tags: {
+    id: string;
+    name: string;
+  };
+}
+
+interface AnalysisWithTags extends Analysis {
+  analysis_tags?: TagRelation[];
+}
+
 export default function FeedPage() {
   const [analyses, setAnalyses] = useState<Analysis[]>([])
   const [allTags, setAllTags] = useState<Tag[]>([])
@@ -116,12 +127,12 @@ export default function FeedPage() {
         data?.map(analysis => ({
           ...analysis,
           tags:
-            analysis.analysis_tags?.map((t: any) => t.tags).filter(Boolean) ||
+            (analysis as any).analysis_tags?.map((t: any) => t.tags).filter(Boolean) ||
             [],
         })) || []
 
       setAnalyses(formattedData)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching analyses:', error)
       setError('데이터를 불러오는 중 오류가 발생했습니다.')
     } finally {
@@ -206,7 +217,7 @@ export default function FeedPage() {
     <div className='feed-container'>
       <div className='feed-main'>
         <div className='feed-header'>
-          <h1 className='feed-title'>커뮤니티 피드</h1>
+          <h1 className='feed-title'>다른 사용자의 분석</h1>
           <p className='feed-subtitle'>
             다른 사용자들이 분석한 유튜브 영상들을 확인하고,<br /> 새로운 인사이트를
             발견해보세요.
@@ -436,7 +447,7 @@ export default function FeedPage() {
                 <p className='empty-description'>
                   {selectedTag
                     ? '다른 태그를 선택하거나 직접 새로운 분석을 추가해보세요!'
-                    : '첫 번째 분석을 추가하여 커뮤니티를 시작해보세요!'}
+                    : '첫 번째 분석을 추가하여 공유를 시작해보세요!'}
                 </p>
                 <Link href='/analyze' className='btn-feed-primary'>
                   🚀 분석 시작하기

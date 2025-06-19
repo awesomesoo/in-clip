@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import styles from './AnalysisDetail.module.css'
 
 interface PageProps {
@@ -21,11 +20,30 @@ interface Analysis {
   created_at: string
   updated_at: string
   tags?: Tag[]
+  // 추가 AI 분석 필드들
+  ai_summary?: string
+  key_points?: string[]
+  category?: string
+  sentiment?: string
+  difficulty?: string
+  duration_estimate?: string
+  ai_tags?: string[]
 }
 
 interface Tag {
   id: string
   name: string
+}
+
+interface TagRelation {
+  tags: {
+    id: string;
+    name: string;
+  };
+}
+
+interface AnalysisTagsResponse {
+  analysis_tags: TagRelation[];
 }
 
 export default function AnalysisDetailPage({ params }: PageProps) {
@@ -60,7 +78,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
             id: '1',
             title: 'React 18 새로운 기능 소개',
             description:
-              'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다.\n\n주요 내용:\n1. Concurrent Features - React 18의 가장 큰 변화\n2. Suspense 개선사항 - 데이터 로딩 최적화\n3. Automatic Batching - 성능 향상\n4. useId Hook - SSR 호환성 개선\n\n이러한 새로운 기능들을 통해 React 애플리케이션의 성능과 사용자 경험을 크게 향상시킬 수 있습니다.',
+              'React 18의 주요 변경사항과 새로운 기능들을 분석했습니다.',
             youtube_url: 'https://youtube.com/watch?v=sample1',
             user_description: '대학 강의 정리용',
             created_at: new Date().toISOString(),
@@ -69,6 +87,18 @@ export default function AnalysisDetailPage({ params }: PageProps) {
               { id: '1', name: '프론트엔드' },
               { id: '2', name: '기술' },
             ],
+            ai_summary: 'React 18은 Concurrent Features, Suspense 개선, Automatic Batching, useId Hook 등의 새로운 기능을 도입하여 성능과 사용자 경험을 향상시킵니다.',
+            key_points: [
+              'Concurrent Features - React 18의 가장 큰 변화로 동시성 처리가 가능해졌습니다',
+              'Suspense 개선사항 - 데이터 로딩과 코드 분할을 더욱 효율적으로 처리할 수 있습니다',
+              'Automatic Batching - 여러 상태 업데이트를 자동으로 묶어 성능을 향상시킵니다',
+              'useId Hook - 서버 사이드 렌더링과의 호환성을 개선합니다'
+            ],
+            category: '기술',
+            sentiment: '긍정적',
+            difficulty: '중급',
+            duration_estimate: '15분',
+            ai_tags: ['React', '프론트엔드', '자바스크립트', '웹개발'],
           },
           {
             id: '2',
@@ -119,6 +149,13 @@ export default function AnalysisDetailPage({ params }: PageProps) {
                     user_description,
                     created_at,
                     updated_at,
+                    ai_summary,
+                    key_points,
+                    category,
+                    sentiment,
+                    difficulty,
+                    duration_estimate,
+                    ai_tags,
                     analysis_tags (
                         tags (
                             id,
@@ -139,7 +176,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
       const formattedAnalysis = {
         ...analysisData,
         tags:
-          analysisData.analysis_tags?.map((t: any) => t.tags).filter(Boolean) ||
+          (analysisData.analysis_tags as any)?.map((t: any) => t.tags).filter(Boolean) ||
           [],
       }
 
@@ -149,7 +186,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
       if (formattedAnalysis.tags && formattedAnalysis.tags.length > 0) {
         loadRelatedAnalyses(formattedAnalysis.tags.map(tag => tag.name))
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading analysis:', error)
       setError('데이터를 불러오는 중 오류가 발생했습니다.')
     } finally {
@@ -304,6 +341,32 @@ export default function AnalysisDetailPage({ params }: PageProps) {
               )}
             </div>
 
+            {/* 메타데이터 뱃지 */}
+            {(analysis.category || analysis.difficulty || analysis.sentiment || analysis.duration_estimate) && (
+              <div className={styles.metadataBadges}>
+                {analysis.category && (
+                  <span className={styles.badge}>
+                    {analysis.category}
+                  </span>
+                )}
+                {analysis.difficulty && (
+                  <span className={styles.badgeOutline}>
+                    {analysis.difficulty}
+                  </span>
+                )}
+                {analysis.sentiment && (
+                  <span className={styles.badgeOutline}>
+                    {analysis.sentiment}
+                  </span>
+                )}
+                {analysis.duration_estimate && (
+                  <span className={styles.badgeOutline}>
+                    ⏱️ {analysis.duration_estimate}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* 태그 */}
             {analysis.tags && analysis.tags.length > 0 && (
               <div className={styles.tagContainer}>
@@ -379,22 +442,76 @@ export default function AnalysisDetailPage({ params }: PageProps) {
               </div>
             </section>
 
-            {/* 분석 내용 섹션 */}
-            <section className={styles.analysisSection}>
-              <h2 className={styles.sectionTitle}>
-                <span className={styles.sectionIcon}>📄</span>
-                분석 내용
-              </h2>
-              <div className={styles.analysisContent}>
-                <div className={styles.contentText}>
-                  {analysis.description.split('\n').map((paragraph, index) => (
-                    <p key={index} className={styles.paragraph}>
-                      {paragraph}
-                    </p>
-                  ))}
+            {/* AI 요약 섹션 */}
+            {analysis.ai_summary && (
+              <section className={styles.summarySection}>
+                <h2 className={styles.sectionTitle}>
+                  <span className={styles.sectionIcon}>🤖</span>
+                  AI 요약
+                </h2>
+                <div className={styles.summaryContent}>
+                  <p className={styles.summaryText}>{analysis.ai_summary}</p>
                 </div>
-              </div>
-            </section>
+              </section>
+            )}
+
+            {/* 주요 포인트 섹션 */}
+            {analysis.key_points && analysis.key_points.length > 0 && (
+              <section className={styles.keyPointsSection}>
+                <h2 className={styles.sectionTitle}>
+                  <span className={styles.sectionIcon}>🎯</span>
+                  주요 포인트
+                </h2>
+                <div className={styles.keyPointsContent}>
+                  <ul className={styles.keyPointsList}>
+                    {analysis.key_points.map((point, index) => (
+                      <li key={index} className={styles.keyPointItem}>
+                        <span className={styles.keyPointNumber}>{index + 1}</span>
+                        <span className={styles.keyPointText}>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            )}
+
+            {/* AI 태그 섹션 */}
+            {analysis.ai_tags && analysis.ai_tags.length > 0 && (
+              <section className={styles.aiTagsSection}>
+                <h2 className={styles.sectionTitle}>
+                  <span className={styles.sectionIcon}>🏷️</span>
+                  AI 추천 태그
+                </h2>
+                <div className={styles.aiTagsContent}>
+                  <div className={styles.aiTagsList}>
+                    {analysis.ai_tags.map((tag, index) => (
+                      <span key={index} className={styles.aiTag}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* 분석 내용 섹션 */}
+            {analysis.description && (
+              <section className={styles.analysisSection}>
+                <h2 className={styles.sectionTitle}>
+                  <span className={styles.sectionIcon}>📄</span>
+                  분석 내용
+                </h2>
+                <div className={styles.analysisContent}>
+                  <div className={styles.contentText}>
+                    {analysis.description.split('\n').map((paragraph, index) => (
+                      <p key={index} className={styles.paragraph}>
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         </article>
 
@@ -501,7 +618,7 @@ export default function AnalysisDetailPage({ params }: PageProps) {
             <div className={styles.ctaContent}>
               <h3 className={styles.ctaTitle}>이 분석이 도움이 되셨나요?</h3>
               <p className={styles.ctaDescription}>
-                다른 유용한 영상들도 커뮤니티에서 확인해보세요!
+                다른 유용한 영상들도 사용자들의 분석에서 확인해보세요!
               </p>
               <div className={styles.ctaButtons}>
                 <Link href='/feed' className={styles.ctaButtonPrimary}>

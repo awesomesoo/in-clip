@@ -79,7 +79,7 @@ export default function Header() {
                 영상 요약하기
               </Link>
               <Link href='/feed' className='nav-link'>
-                커뮤니티
+                다른 사용자의 분석
               </Link>
               {user && (
                 <Link href='/history' className='nav-link'>

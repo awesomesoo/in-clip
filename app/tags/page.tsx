@@ -1,20 +1,47 @@
 import { createServerClient } from '../../lib/supabase-server'
 import Link from 'next/link'
 
+interface Tag {
+    id: string;
+    name: string;
+    created_at: string;
+    analysis_tags: {
+        analysis_id: string;
+    }[];
+}
+
 export default async function TagsPage() {
     const supabase = createServerClient()
+    let tags: Tag[] | null = null
+    let error: any = null
 
-    const { data: tags, error } = await supabase
-        .from('tags')
-        .select(`
-      id,
-      name,
-      created_at,
-      analysis_tags (
-        analysis_id
-      )
-    `)
-        .order('name')
+    // Supabase가 null인 경우 처리
+    if (supabase) {
+        try {
+            const result = await supabase
+                .from('tags')
+                .select(`
+          id,
+          name,
+          created_at,
+          analysis_tags (
+            analysis_id
+          )
+        `)
+                .order('name')
+
+            tags = result.data
+            error = result.error
+        } catch (e) {
+            console.error('Error fetching tags:', e)
+            error = e
+        }
+    } else {
+        console.warn('⚠️ Supabase 클라이언트가 초기화되지 않았습니다. 환경 변수를 확인해주세요.')
+        // 환경 변수가 없을 때 기본 상태로 설정
+        tags = []
+        error = null
+    }
 
     if (error) {
         console.error('Error fetching tags:', error)
@@ -52,9 +79,15 @@ export default async function TagsPage() {
                 </div>
             )}
 
+            {!supabase && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-yellow-700">
+                    ⚠️ 데이터베이스 연결이 설정되지 않았습니다. 환경 변수를 확인해주세요.
+                </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tags && tags.length > 0 ? (
-                    tags.map((tag: any) => {
+                    tags.map((tag: Tag) => {
                         const analysisCount = tag.analysis_tags?.length || 0
 
                         return (
@@ -98,8 +131,15 @@ export default async function TagsPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">아직 태그가 없습니다</h3>
-                        <p className="text-gray-600 mb-4">첫 번째 분석을 추가하여 태그를 만들어보세요!</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            {!supabase ? '데이터베이스 연결이 필요합니다' : '아직 태그가 없습니다'}
+                        </h3>
+                        <p className="text-gray-600 mb-4">
+                            {!supabase ?
+                                '환경 변수를 설정하고 다시 시도해주세요.' :
+                                '첫 번째 분석을 추가하여 태그를 만들어보세요!'
+                            }
+                        </p>
                         <Link href="/analyze" className="btn btn-primary">
                             분석 시작하기
                         </Link>

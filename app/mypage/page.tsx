@@ -11,26 +11,32 @@ import SearchHistoryManager from '@/components/SearchHistoryManager'
 import Link from 'next/link'
 
 interface AnalysisWithTags {
-  id: any
-  title: any
-  description: any
-  youtube_url: any
-  created_at: any
+  id: string;
+  title: string;
+  description: string;
+  youtube_url: string;
+  created_at: string;
   analysis_tags: {
     tags: {
-      id: any
-      name: any
-    }[]
-  }[]
+      id: string;
+      name: string;
+    }[];
+  }[];
+}
+
+interface UserStats {
+  totalAnalyses: number;
+  totalHistory: number;
+  recentAnalyses: AnalysisWithTags[];
 }
 
 function MyPageContent() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<UserStats>({
     totalAnalyses: 0,
     totalHistory: 0,
-    recentAnalyses: [] as AnalysisWithTags[],
+    recentAnalyses: [],
   })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -119,8 +125,8 @@ function MyPageContent() {
         totalHistory: historyCount || 0,
         recentAnalyses: recentAnalyses || [],
       })
-    } catch (error: any) {
-      setError(error.message)
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.')
     } finally {
       setLoading(false)
     }

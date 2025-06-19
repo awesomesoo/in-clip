@@ -55,7 +55,7 @@ export default function Footer() {
                 {/* Social Links & Copyright */}
                 <div className="footer-bottom">
                     <p className="footer-copyright">
-                        © 2024 InClip. All rights reserved.
+                        © 2025 InClip. All rights reserved.
                     </p>
 
                     <div className="social-links">

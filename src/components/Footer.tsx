@@ -26,7 +26,7 @@ export default function Footer() {
                 </div>
 
                 <div className={styles.copyright}>
-                    <p>&copy; 2024 InClip. All rights reserved.</p>
+                    <p>&copy; 2025 InClip. All rights reserved.</p>
                 </div>
             </div>
         </footer>

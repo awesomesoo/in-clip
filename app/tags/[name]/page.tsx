@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 
 interface PageProps {
     params: Promise<{
@@ -19,12 +18,26 @@ interface Analysis {
     user_description?: string
     created_at: string
     updated_at: string
+    analysis_tags?: {
+        tags: {
+            id: string;
+            name: string;
+        }
+    }[]
+}
+
+interface SampleAnalysis {
+    id: string;
+    title: string;
+    description: string;
+    youtube_url: string;
+    user_description?: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export default function TagPage({ params }: PageProps) {
     const [analyses, setAnalyses] = useState<Analysis[]>([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState('')
     const [resolvedParams, setResolvedParams] = useState<{ name: string } | null>(null)
 
     useEffect(() => {
@@ -39,6 +52,7 @@ export default function TagPage({ params }: PageProps) {
         if (resolvedParams) {
             loadAnalyses()
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [resolvedParams])
 
     const loadAnalyses = async () => {
@@ -47,7 +61,7 @@ export default function TagPage({ params }: PageProps) {
         try {
             if (!supabase) {
                 // Supabase가 설정되지 않은 경우 샘플 데이터 사용
-                const sampleAnalyses: Analysis[] = [
+                const sampleAnalyses: SampleAnalysis[] = [
                     {
                         id: '1',
                         title: 'React 18 새로운 기능 소개',
@@ -77,7 +91,17 @@ export default function TagPage({ params }: PageProps) {
                     return tagNameDecoded === '프론트엔드' ? index === 0 : index === 1
                 })
 
-                setAnalyses(filteredAnalyses)
+                const analysesWithTags: Analysis[] = filteredAnalyses.map(analysis => ({
+                    ...analysis,
+                    analysis_tags: [{
+                        tags: {
+                            id: tagNameDecoded === '프론트엔드' ? '1' : '2',
+                            name: tagNameDecoded
+                        }
+                    }]
+                }))
+
+                setAnalyses(analysesWithTags)
                 return
             }
 
@@ -97,6 +121,7 @@ export default function TagPage({ params }: PageProps) {
                     updated_at,
                     analysis_tags!inner (
                         tags!inner (
+                            id,
                             name
                         )
                     )
@@ -107,12 +132,33 @@ export default function TagPage({ params }: PageProps) {
 
             if (error) throw error
 
-            setAnalyses(data || [])
-        } catch (error: any) {
+            const formattedData: Analysis[] = (data || []).map((analysis) => {
+                const a = analysis as unknown as {
+                    id: string;
+                    title: string;
+                    description: string;
+                    youtube_url: string;
+                    user_description?: string;
+                    created_at: string;
+                    updated_at: string;
+                    analysis_tags: { tags: { id: string; name: string } }[];
+                };
+                return {
+                    ...a,
+                    analysis_tags: Array.isArray(a.analysis_tags)
+                        ? a.analysis_tags.map((tagRelation) => ({
+                            tags: {
+                                id: tagRelation.tags.id,
+                                name: tagRelation.tags.name
+                            }
+                        }))
+                        : [],
+                };
+            });
+
+            setAnalyses(formattedData)
+        } catch (error: unknown) {
             console.error('Error loading analyses:', error)
-            setError('데이터를 불러오는 중 오류가 발생했습니다.')
-        } finally {
-            setLoading(false)
         }
     }
 
@@ -157,7 +203,7 @@ export default function TagPage({ params }: PageProps) {
                     #{resolvedParams?.name}
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                    '{resolvedParams?.name}' 태그 분석글
+                    &apos;{resolvedParams?.name}&apos; 태그 분석글
                 </h1>
                 <p className="text-gray-600">
                     총 {analyses.length}개의 분석글이 있습니다.
@@ -172,7 +218,7 @@ export default function TagPage({ params }: PageProps) {
 
             <div className="space-y-6">
                 {analyses && analyses.length > 0 ? (
-                    analyses.map((analysis: any) => {
+                    analyses.map((analysis: Analysis) => {
                         const videoId = extractVideoId(analysis.youtube_url)
                         const thumbnailUrl = videoId
                             ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
@@ -209,7 +255,7 @@ export default function TagPage({ params }: PageProps) {
                                         </p>
 
                                         <div className="flex flex-wrap gap-2">
-                                            {analysis.analysis_tags?.filter((tagRelation: any) => tagRelation.tags).map((tagRelation: any) => (
+                                            {analysis.analysis_tags?.filter((tagRelation) => tagRelation.tags).map((tagRelation) => (
                                                 <Link
                                                     key={tagRelation.tags.id}
                                                     href={`/tags/${encodeURIComponent(tagRelation.tags.name)}`}
@@ -248,28 +294,19 @@ export default function TagPage({ params }: PageProps) {
                         )
                     })
                 ) : (
-                    <div className="text-center py-12">
+                    <div className="col-span-full text-center py-12">
                         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">이 태그에 해당하는 분석글이 없습니다</h3>
-                        <p className="text-gray-600 mb-4">'{resolvedParams?.name}' 태그로 첫 번째 분석을 추가해보세요!</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">아직 분석글이 없습니다</h3>
+                        <p className="text-gray-600 mb-4">첫 번째 분석을 추가해보세요!</p>
                         <Link href="/analyze" className="btn btn-primary">
                             분석 시작하기
                         </Link>
                     </div>
                 )}
-            </div>
-
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <h3 className="font-semibold text-gray-900 mb-2">태그 정보</h3>
-                <div className="text-sm text-gray-600 space-y-1">
-                    <p>• 태그명: #{resolvedParams?.name}</p>
-                    <p>• 생성일: {formatDate(resolvedParams?.created_at || '')}</p>
-                    <p>• 분석글 수: {analyses.length}개</p>
-                </div>
             </div>
         </div>
     )

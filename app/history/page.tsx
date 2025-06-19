@@ -26,6 +26,25 @@ interface Tag {
   name: string
 }
 
+interface AnalysisWithTags {
+  id: string;
+  title: string;
+  description: string;
+  youtube_url: string;
+  user_description?: string;
+  created_at: string;
+  analysis_tags?: {
+    tags: {
+      id: string;
+      name: string;
+    };
+  }[];
+}
+
+interface AnalysisHistoryWithTags extends AnalysisHistory {
+  analysis: AnalysisWithTags;
+}
+
 function HistoryPageContent() {
   const { user } = useAuth()
   const [history, setHistory] = useState<AnalysisHistory[]>([])
@@ -44,7 +63,13 @@ function HistoryPageContent() {
     title: '',
     description: '',
     user_description: '',
+    tags: [] as Tag[],
   })
+
+  // 태그 관리 상태
+  const [newTagName, setNewTagName] = useState('')
+  const [isAddingTag, setIsAddingTag] = useState(false)
+  const [aiSuggestedTags, setAiSuggestedTags] = useState<string[]>([])
 
   useEffect(() => {
     if (user) {
@@ -426,6 +451,7 @@ function HistoryPageContent() {
       title?: string
       description?: string
       user_description?: string
+      tags?: Tag[]
     }
   ) => {
     if (!supabase) {
@@ -444,12 +470,19 @@ function HistoryPageContent() {
     }
 
     try {
+      // tags 필드는 별도 테이블이므로 분리
+      const { tags, ...analysisFields } = updatedFields
+
+      // analysis 테이블 업데이트
       const { error } = await supabase
         .from('analysis')
-        .update(updatedFields)
+        .update(analysisFields)
         .eq('id', analysisId)
 
       if (error) throw error
+
+      // 태그 업데이트는 현재 구현하지 않고 로컬에서만 처리
+      // TODO: analysis_tags 테이블 업데이트 로직 추가 필요
 
       const updatedHistory = history.map(item =>
         item.analysis.id === analysisId
@@ -461,18 +494,30 @@ function HistoryPageContent() {
       )
       setHistory(updatedHistory)
       setFilteredHistory(updatedHistory)
+
+      // 태그가 변경된 경우 availableTags도 업데이트
+      if (tags) {
+        const newTags = tags.filter(tag =>
+          !availableTags.some(existingTag => existingTag.name === tag.name)
+        )
+        if (newTags.length > 0) {
+          setAvailableTags(prev => [...prev, ...newTags])
+        }
+      }
     } catch (error: any) {
       setError(error.message)
     }
   }
 
-  const startEditAnalysis = (analysisId: string, analysis: any) => {
+  const startEditAnalysis = (analysisId: string, analysis: AnalysisWithTags) => {
     setEditingAnalysis(analysisId)
     setEditingValues({
-      title: analysis.title || '',
-      description: analysis.description || '',
+      title: analysis.title,
+      description: analysis.description,
       user_description: analysis.user_description || '',
+      tags: analysis.analysis_tags?.map(t => t.tags) || [],
     })
+    generateAISuggestedTags(analysis.title, analysis.description)
   }
 
   const cancelEditAnalysis = () => {
@@ -481,7 +526,11 @@ function HistoryPageContent() {
       title: '',
       description: '',
       user_description: '',
+      tags: [],
     })
+    setNewTagName('')
+    setIsAddingTag(false)
+    setAiSuggestedTags([])
   }
 
   const saveAnalysis = (analysisId: string) => {
@@ -491,7 +540,11 @@ function HistoryPageContent() {
       title: '',
       description: '',
       user_description: '',
+      tags: [],
     })
+    setNewTagName('')
+    setIsAddingTag(false)
+    setAiSuggestedTags([])
   }
 
   const deleteAllHistory = async () => {
@@ -567,6 +620,105 @@ function HistoryPageContent() {
       default:
         return '전체 기간'
     }
+  }
+
+  // AI 추천 태그 생성 함수
+  const generateAISuggestedTags = (title: string, description: string) => {
+    const commonTags = ['교육', '기술', '자기계발', '엔터테인먼트', '뉴스', '스포츠', '음악', '요리', '여행', '게임']
+
+    // 간단한 키워드 기반 태그 추천 로직
+    const content = (title + ' ' + description).toLowerCase()
+    const suggested: string[] = []
+
+    if (content.includes('프로그래밍') || content.includes('코딩') || content.includes('개발')) {
+      suggested.push('프로그래밍', '개발', '기술')
+    }
+    if (content.includes('요리') || content.includes('레시피') || content.includes('음식')) {
+      suggested.push('요리', '레시피', '생활')
+    }
+    if (content.includes('여행') || content.includes('관광')) {
+      suggested.push('여행', '문화', '체험')
+    }
+    if (content.includes('영어') || content.includes('언어')) {
+      suggested.push('언어', '교육', '학습')
+    }
+    if (content.includes('운동') || content.includes('피트니스') || content.includes('헬스')) {
+      suggested.push('운동', '건강', '피트니스')
+    }
+    if (content.includes('투자') || content.includes('주식') || content.includes('경제')) {
+      suggested.push('투자', '경제', '금융')
+    }
+
+    // 중복 제거 및 기본 태그 추가
+    const uniqueTags = Array.from(new Set([...suggested, ...commonTags.slice(0, 5)]))
+    setAiSuggestedTags(uniqueTags.slice(0, 8))
+  }
+
+  // 새 태그 추가 함수
+  const addNewTag = () => {
+    if (!newTagName.trim()) return
+
+    const newTag: Tag = {
+      id: `custom-${Date.now()}`,
+      name: newTagName.trim()
+    }
+
+    setEditingValues(prev => ({
+      ...prev,
+      tags: [...prev.tags, newTag]
+    }))
+
+    if (!availableTags.some(tag => tag.name === newTag.name)) {
+      setAvailableTags(prev => [...prev, newTag])
+    }
+
+    setNewTagName('')
+    setIsAddingTag(false)
+  }
+
+  // 태그 제거 함수
+  const removeTag = (tagId: string) => {
+    setEditingValues(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag.id !== tagId)
+    }))
+  }
+
+  // AI 추천 태그 추가 함수
+  const addAISuggestedTag = (tagName: string) => {
+    const newTag: Tag = {
+      id: `ai-${Date.now()}`,
+      name: tagName
+    }
+
+    if (!editingValues.tags.some(tag => tag.name === tagName)) {
+      setEditingValues(prev => ({
+        ...prev,
+        tags: [...prev.tags, newTag]
+      }))
+
+      if (!availableTags.some(tag => tag.name === tagName)) {
+        setAvailableTags(prev => [...prev, newTag])
+      }
+    }
+  }
+
+  // 제목 길이 제한 함수
+  const truncateTitle = (title: string, maxLength: number = 50) => {
+    if (title.length <= maxLength) return title
+    return title.substring(0, maxLength) + '...'
+  }
+
+  // 설명 4줄 제한 함수
+  const truncateDescription = (description: string, maxLines: number = 4) => {
+    const lines = description.split('\n')
+    if (lines.length <= maxLines) {
+      // 줄 수는 적지만 각 줄이 너무 길 수 있으므로 전체 길이도 확인
+      const totalText = lines.join(' ')
+      if (totalText.length <= 200) return description
+      return totalText.substring(0, 200) + '...'
+    }
+    return lines.slice(0, maxLines).join('\n') + '...'
   }
 
   // 디버깅 함수 추가
@@ -869,6 +1021,94 @@ function HistoryPageContent() {
                           />
                         </div>
 
+                        {/* 태그 편집 */}
+                        <div className={styles.inputGroup}>
+                          <label className={styles.inputLabel}>태그</label>
+
+                          {/* 현재 태그들 */}
+                          <div className={styles.tags} style={{ marginBottom: '1rem' }}>
+                            {editingValues.tags.map(tag => (
+                              <span key={tag.id} className={`${styles.tag} ${styles.editableTag}`}>
+                                #{tag.name}
+                                <button
+                                  type="button"
+                                  onClick={() => removeTag(tag.id)}
+                                  className={styles.removeTagBtn}
+                                  title="태그 제거"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* AI 추천 태그 */}
+                          {aiSuggestedTags.length > 0 && (
+                            <div style={{ marginBottom: '1rem' }}>
+                              <div className={styles.aiTagsLabel}>🤖 AI 추천 태그</div>
+                              <div className={styles.aiTags}>
+                                {aiSuggestedTags.map(tagName => (
+                                  <button
+                                    key={tagName}
+                                    type="button"
+                                    onClick={() => addAISuggestedTag(tagName)}
+                                    className={styles.aiSuggestedTag}
+                                    disabled={editingValues.tags.some(tag => tag.name === tagName)}
+                                  >
+                                    #{tagName}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 새 태그 추가 */}
+                          <div className={styles.addTagSection}>
+                            {isAddingTag ? (
+                              <div className={styles.addTagForm}>
+                                <input
+                                  type="text"
+                                  value={newTagName}
+                                  onChange={e => setNewTagName(e.target.value)}
+                                  onKeyPress={e => e.key === 'Enter' && addNewTag()}
+                                  placeholder="새 태그 이름..."
+                                  className={styles.input}
+                                  style={{ marginBottom: '0.5rem' }}
+                                />
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    type="button"
+                                    onClick={addNewTag}
+                                    className={`${styles.actionBtn} ${styles.primaryBtn}`}
+                                    style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+                                  >
+                                    추가
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setIsAddingTag(false)
+                                      setNewTagName('')
+                                    }}
+                                    className={`${styles.actionBtn} ${styles.secondaryBtn}`}
+                                    style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+                                  >
+                                    취소
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setIsAddingTag(true)}
+                                className={styles.addTagBtn}
+                              >
+                                + 새 태그 추가
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
                         {/* 편집 버튼들 */}
                         <div className={styles.editActions}>
                           <button
@@ -916,7 +1156,7 @@ function HistoryPageContent() {
                       <div className={styles.viewMode}>
                         <div className={styles.contentHeader}>
                           <h3 className={styles.analysisTitle}>
-                            {item.analysis.title}
+                            {truncateTitle(item.analysis.title)}
                           </h3>
                           <div className={styles.metaInfo}>
                             <span className={styles.dateText}>
@@ -926,7 +1166,7 @@ function HistoryPageContent() {
                         </div>
 
                         <p className={styles.description}>
-                          {item.analysis.description}
+                          {truncateDescription(item.analysis.description)}
                         </p>
 
                         {/* 비공개 메모 표시 */}

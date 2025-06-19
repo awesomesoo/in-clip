@@ -76,3 +76,4 @@ bun dev
 ## 🚀 배포
 
 [Vercel Platform](https://vercel.com/new)을 사용하여 쉽게 배포할 수 있습니다. 환경 변수 설정을 잊지 마세요!
+# project-1

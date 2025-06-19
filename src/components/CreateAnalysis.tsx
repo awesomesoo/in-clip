@@ -259,8 +259,8 @@ export default function CreateAnalysis({
             type='submit'
             disabled={loading}
             className={`flex-1 px-4 py-2 rounded-md transition-colors ${loading
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
               }`}
           >
             {loading ? (

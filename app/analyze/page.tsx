@@ -1,11 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { User } from '@supabase/supabase-js'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-context'
-import { isSupabaseConfigured } from '@/lib/supabase'
-import { createAnalysisWithTags, addSearchHistory } from '@/lib/database'
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -32,6 +29,31 @@ interface AnalysisResult {
 interface Tag {
   id: string
   name: string
+}
+
+interface YoutubeAnalysisData {
+  videoId: string;
+  url: string;
+  transcript: string;
+  saved?: boolean;
+  savedId?: string;
+  message?: string;
+  analysis: {
+    title: string;
+    summary: string;
+    keyPoints: string[];
+    category: string;
+    sentiment: string;
+    difficulty: string;
+    duration_estimate: string;
+    tags: string[];
+  };
+}
+
+interface ApiResponse {
+  success: boolean;
+  data?: YoutubeAnalysisData;
+  error?: string;
 }
 
 export default function AnalyzePage() {
@@ -78,25 +100,14 @@ export default function AnalyzePage() {
   ]
 
   // 태그 이름을 기반으로 일관된 색상 반환
-  const getTagColor = (tagName: string) => {
+  const getTagColor = useCallback((tagName: string) => {
     const hash = tagName
       .split('')
       .reduce((acc, char) => acc + char.charCodeAt(0), 0)
     return pastelColors[hash % pastelColors.length]
-  }
+  }, [pastelColors])
 
-  useEffect(() => {
-    loadAvailableTags()
-
-    // URL 파라미터에서 url 값 가져오기
-    const urlParams = new URLSearchParams(window.location.search)
-    const urlParam = urlParams.get('url')
-    if (urlParam) {
-      setUrl(decodeURIComponent(urlParam))
-    }
-  }, [user]) // user가 변경될 때마다 태그를 다시 로드
-
-  const loadAvailableTags = async () => {
+  const loadAvailableTags = useCallback(async () => {
     // 기본 태그들 제공
     const defaultTags: Tag[] = [
       { id: 'travel', name: '여행' },
@@ -138,7 +149,18 @@ export default function AnalyzePage() {
       console.error('Error loading tags:', error)
       setAvailableTags(defaultTags)
     }
-  }
+  }, [user])
+
+  useEffect(() => {
+    loadAvailableTags()
+
+    // URL 파라미터에서 url 값 가져오기
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlParam = urlParams.get('url')
+    if (urlParam) {
+      setUrl(decodeURIComponent(urlParam))
+    }
+  }, [loadAvailableTags])
 
   const addNewTag = async () => {
     if (!newTag.trim()) return
@@ -248,7 +270,7 @@ export default function AnalyzePage() {
         body: JSON.stringify({ url: url.trim() }),
       })
 
-      const data = await response.json()
+      const data: ApiResponse = await response.json()
 
       console.log('📡 API 응답 받음:', {
         status: response.status,
@@ -304,8 +326,6 @@ export default function AnalyzePage() {
             title: analysisResult.title
           }))
         }
-
-
 
         // 자동 이동 옵션이 켜져있고 실제로 저장된 분석인 경우 결과 페이지로 이동
         if (autoRedirect && !analysisResult.id.startsWith('demo-')) {
@@ -461,81 +481,6 @@ export default function AnalyzePage() {
             <p className={styles.subtitle}>
               유튜브 URL을 입력하면 영상의 내용을 분석하여 요약해드립니다.
             </p>
-            {/* 디버깅 정보 */}
-            <div style={{
-              marginTop: '1rem',
-              padding: '0.5rem',
-              backgroundColor: '#f0f9ff',
-              border: '1px solid #bae6fd',
-              borderRadius: '8px',
-              fontSize: '0.875rem'
-            }}>
-              <div><strong>🔍 현재 상태:</strong></div>
-              <div>로그인 상태: {user ? `✅ ${user.email}` : '❌ 로그인 필요'}</div>
-              <div>사용자 ID: {user?.id || '없음'}</div>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <button
-                  onClick={() => {
-                    console.log('👤 현재 사용자 정보:', user)
-                    console.log('🔐 인증 상태 상세:', {
-                      isLoggedIn: !!user,
-                      userId: user?.id,
-                      email: user?.email,
-                      userMetadata: user?.user_metadata
-                    })
-                  }}
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    fontSize: '0.75rem',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  사용자 정보 확인
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      if (!supabase) {
-                        alert('Supabase 클라이언트가 없습니다.')
-                        return
-                      }
-                      const token = (await supabase.auth.getSession()).data.session?.access_token
-                      console.log('🔑 현재 토큰:', token ? '있음' : '없음')
-
-                      const response = await fetch('/api/debug-auth', {
-                        method: 'POST',
-                        headers: {
-                          'Authorization': `Bearer ${token}`,
-                          'Content-Type': 'application/json'
-                        }
-                      })
-                      const result = await response.json()
-                      console.log('🔍 API 디버깅 결과:', result)
-
-                      alert(`디버깅 완료! 콘솔 확인:\n- 사용자 인식: ${result.auth?.hasUser ? '✅' : '❌'}\n- DB 연결: ${result.database?.connected ? '✅' : '❌'}\n- 토큰: ${result.request?.hasAuthHeader ? '✅' : '❌'}`)
-                    } catch (error) {
-                      console.error('❌ 디버깅 실패:', error)
-                      alert('디버깅 실패: ' + error)
-                    }
-                  }}
-                  style={{
-                    padding: '0.25rem 0.5rem',
-                    fontSize: '0.75rem',
-                    backgroundColor: '#dc2626',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  🔍 인증 & DB 테스트
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* 분석 폼 */}
@@ -1214,7 +1159,7 @@ export default function AnalyzePage() {
                   href='/feed'
                   className={`${styles.button} ${styles.buttonPrimary}`}
                 >
-                  커뮤니티 피드 보기
+                  다른 사용자의 분석 보기
                 </Link>
                 {user && (
                   <Link

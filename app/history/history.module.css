@@ -157,15 +157,34 @@
 }
 
 .clearAllFilters {
-  color: #6b7280;
-  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
   cursor: pointer;
-  font-size: 0.9rem;
-  transition: color 0.2s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.clearAllFilters::before {
+  content: "🗑️";
+  margin-right: 0.25rem;
 }
 
 .clearAllFilters:hover {
-  color: #374151;
+  background: linear-gradient(135deg, #fee2e2, #fca5a5);
+  color: #b91c1c;
+  border-color: #f87171;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
 }
 
 .loading {
@@ -219,8 +238,8 @@
 }
 
 .thumbnailImg {
-  width: 240px;
-  height: 180px;
+  width: 320px;
+  height: 200px;
   object-fit: cover;
   border-radius: 12px;
   border: 2px solid #e5e7eb;
@@ -255,6 +274,7 @@
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
+  gap: 1rem;
 }
 
 .analysisTitle {
@@ -263,17 +283,25 @@
   color: #1e293b;
   line-height: 1.3;
   margin: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .metaInfo {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-shrink: 0;
+  min-width: fit-content;
 }
 
 .dateText {
   color: #6b7280;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 
 .editBtn {
@@ -304,6 +332,15 @@
   line-height: 1.6;
   margin-bottom: 1.5rem;
   font-size: 1rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 6.4rem;
+  /* 4줄 고정 크기 */
+  max-height: 6.4rem;
+  /* 4줄 * 1.6 line-height */
 }
 
 .userMemo {
@@ -420,6 +457,108 @@
   font-size: 0.85rem;
   font-weight: 500;
   border: 1px solid #93c5fd;
+}
+
+/* 편집 가능한 태그 스타일 */
+.editableTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.removeTagBtn {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: none;
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.25rem;
+}
+
+.removeTagBtn:hover {
+  background: rgba(220, 38, 38, 0.2);
+  transform: scale(1.1);
+}
+
+/* AI 추천 태그 스타일 */
+.aiTagsLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6366f1;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.aiTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.aiSuggestedTag {
+  padding: 0.4rem 0.8rem;
+  background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+  color: #6366f1;
+  border: 1px solid #c7d2fe;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aiSuggestedTag:hover:not(:disabled) {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  border-color: #8b5cf6;
+  transform: translateY(-1px);
+}
+
+.aiSuggestedTag:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #f9fafb, #f3f4f6);
+  color: #9ca3af;
+}
+
+/* 새 태그 추가 스타일 */
+.addTagSection {
+  margin-top: 0.5rem;
+}
+
+.addTagBtn {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  color: #0284c7;
+  border: 2px dashed #38bdf8;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.addTagBtn:hover {
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  border-color: #0284c7;
+  transform: translateY(-1px);
+}
+
+.addTagForm {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
 }
 
 .actions {

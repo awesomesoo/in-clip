@@ -269,9 +269,9 @@ export default function SearchHistoryManager() {
               <span className='ml-1 text-blue-900'>
                 {history.length > 0
                   ? (
-                      history.length /
-                      new Set(history.map(h => h.analysis_id)).size
-                    ).toFixed(1)
+                    history.length /
+                    new Set(history.map(h => h.analysis_id)).size
+                  ).toFixed(1)
                   : 0}
                 회
               </span>
