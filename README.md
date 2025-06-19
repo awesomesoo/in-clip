@@ -54,7 +54,7 @@ bun dev
 - **프론트엔드**: Next.js 15, React 19, TypeScript
 - **AI**: Google Gemini 1.5 Flash
 - **자막 추출**: youtube-transcript
-- **스타일링**: Tailwind CSS (추정)
+- **스타일링**: Tailwind CSS
 
 ## 📋 상세 설정 가이드
 
